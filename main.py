@@ -124,7 +124,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	button4.pack()
 	button4_window = self.canvas.create_window(300, 10, anchor="nw", window=button4)
 
-        button5 = tk.Button(self.canvas, text = "Segmentation patches / this frame", command = self.extract_patches_tf, anchor = "w")
+        button5 = tk.Button(self.canvas, text = "Segment patches for current frame", command = self.extract_patches_tf, anchor = "w")
         button5.configure(width = 25)
         button5.pack()
         button5_window = self.canvas.create_window(500, 10, anchor="nw", window=button5)
@@ -401,7 +401,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       if overlap > 0:
 	while end_loop == 0:
 	  Image.fromarray(img[coord_x:coord_x + window_size[0],
-		          coord_y:coord_y + window_size[1],:]).save("{0}/{1}_{2}_{3}.png".format(self.segmentations_folder,self.video_name,self.img_num+1,counter))
+		          coord_y:coord_y + window_size[1],:]).save("{0}/{1}_{2}_{3}.png".format(self.segmentations_folder,self.video_name,self.img_num+1,counter+1))
 	  counter = counter + 1
 	  print "Counter:", counter, "| rows:", coord_x, "->",coord_x + window_size[0], "| cols:", coord_y, "->", coord_y + window_size[1]
 	  coord_y = coord_y+overlap
@@ -415,7 +415,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       elif overlap == 0:
 	while counter < (img_width/window_size[1])*(img_height/window_size[0]):
 	  Image.fromarray(img[coord_x:coord_x + window_size[0],
-			  coord_y:coord_y + window_size[1],:]).save("{0}/{1}_{2}_{3}.png".format(self.segmentations_folder,self.video_name,self.img_num+1,counter))
+			  coord_y:coord_y + window_size[1],:]).save("{0}/{1}_{2}_{3}.png".format(self.segmentations_folder,self.video_name,self.img_num+1,counter+1))
 	  counter = counter + 1
 	  print "Counter:", counter, "| rows:", coord_x, "->",coord_x + window_size[0], "| cols:", coord_y, "->", coord_y + window_size[1]
 	  coord_y = coord_y+window_size[1]
@@ -449,7 +449,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       counter = 0
       
       while p < (640/window_size[1])*(480/window_size[0]):
-	Image.fromarray(img[coord_x:coord_x+50,coord_y:coord_y+100,:]).save("{0}/{1}_{2}.png".format(self.patches_folder,image_num+1,counter))
+	Image.fromarray(img[coord_x:coord_x+50,coord_y:coord_y+100,:]).save("{0}/{1}_{2}.png".format(self.patches_folder,image_num+1,counter+1))
 	if p == 0:
 	  fop.write("patches/{0}_{1}.png 1 \n".format(image_num+1, counter))
 	else:
@@ -478,7 +478,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	if coord_x < 0:
 	  break      
 
-	Image.fromarray(img[coord_x:coord_x+50,coord_y:coord_y+100,:]).save("{0}/{1}_{2}.png".format(self.patches_folder,image_num + 1,counter))
+	Image.fromarray(img[coord_x:coord_x+50,coord_y:coord_y+100,:]).save("{0}/{1}_{2}.png".format(self.patches_folder,image_num + 1,counter+1))
 	fon.write("patches/{0}_{1}.png 0 \n".format(image_num + 1, counter))
 
 	p = p+1
@@ -550,7 +550,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	return
       
       overlap = None
-      overlap = tkSimpleDialog.askinteger("Overlap","Choose an overlap")
+      overlap = tkSimpleDialog.askinteger("Overlap","Choose an overlap",parent = self.canvas)
       if overlap == None:
 	tkMessageBox.showinfo(title = "Error", message = "Overlap was not entered")
 	return
@@ -561,6 +561,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
      
 
       self.image_segmentation((self.rectangle_size[1],self.rectangle_size[0]), overlap)
+  
 
  
     
