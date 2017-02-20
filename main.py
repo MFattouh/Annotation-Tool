@@ -12,6 +12,7 @@ import datetime		# date time function
 from sklearn.feature_extraction import image # just another image processing lib
 import extract_patches	# for patch extraction?
 from extract_frames import extract_frames_from_videos # frame extraction function
+from extract_frames import get_video_file_name
 import argparse # for the arguments passed 
 from compute_masks import create_masks_for_model # for creating the mask 
 
@@ -66,7 +67,13 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         patches_folder_path = output_folder + "patches/"
         if not os.path.exists(patches_folder_path):
 	  os.makedirs(patches_folder_path)    
-	self.save_folder_patches = patches_folder_path
+	self.patches_folder = patches_folder_path
+	
+	# segmentations folder
+	segmentation_folder_path = output_folder + "segmentations/"
+	if not os.path.exists(segmentation_folder_path):
+	  os.makedirs(segmentation_folder_path)
+	self.segmentations_folder = segmentation_folder_path
 	
         # annnotations folder
         annotation_folder = output_folder + "annotations/"
@@ -147,7 +154,6 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	self.frame_annot_label.pack()
 	self.canvas.create_window(800, 340, anchor="nw", window=self.frame_annot_label)
 	tk.Label(self.frame_annot_label, text="Annotated frames: No info").pack()
-	
 	  
 	# Action label window
 	self.legend_label = tk.LabelFrame(self.canvas, text="Legend", padx=5, pady=5)
@@ -182,8 +188,18 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         
         # get list of videos and the number of their frames
         self.get_number_of_videos_and_frames()
-        
         self.video_index = 0
+        
+        # check if a video file was passed to show its frames first
+        video = None
+        if args.videos is not None:
+	  video = get_video_file_name(args.videos)
+	  video = video + "_fps_" + str(args.fps)
+        
+        # get the index of the video passed as argument from the list
+        if video is not None:
+	  self.video_index = self.list_of_videos.index(video)
+        
         # load the first video frames
         self.load_frames(self.list_of_videos[self.video_index])
         
@@ -207,10 +223,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	if save_option == "image":
 	  tkMessageBox.showinfo(title = "Mask created", message = "saved as images")
 	elif save_option == "mat":
-	  tkMessageBox.showinfo(title = "Mask created", message = "saved as mat files")
-	
-	     
-	
+	  tkMessageBox.showinfo(title = "Mask created", message = "saved as mat files")	
 
 		
     def create_token(self, coord, color, rectangle_size):
@@ -219,7 +232,6 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         ####print "X", x
         ####print "Y", y
 	self.polygon_id = self.canvas.create_polygon(x,y,x+rectangle_size[0],y,x+rectangle_size[0],y+rectangle_size[1],x,y+rectangle_size[1], outline=color, fill='', tags="token")
-    
     
     
     # or maybe use yield for reading next image
@@ -375,51 +387,52 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       self.canvas.move(self.polygon_id, -curr_position[0]+rel_position[0], -curr_position[1]+rel_position[1])
     
        
-    def image_segmentation(self, window_size, image_num = 0, overlap = 0, pos = 0):
-      self.read_image_from_file(image_num)
+    def image_segmentation(self, window_size, image_num = 0, overlap = 0):
       img = self.curr_image_raw
+      img_width = self.curr_photoimage.width()
+      img_height = self.curr_photoimage.height()
 
       coord_x = 0
-      coord_y = 0
-      p = 0
+      coord_y = 0     
       counter = 0
-      nonoverlap = 10
 
       end_loop = 0
-      while (nonoverlap!=0) and (end_loop == 0):
-        if counter < 10:
-	  Image.fromarray(img[coord_x:coord_x+50,coord_y:coord_y+100,:]).save("{0}/{1}_0000{2}.png".format(self.save_folder_patches,image_num +1,counter))
-	if (counter >=10) and (counter < 100): 
-	  Image.fromarray(img[coord_x:coord_x+50,coord_y:coord_y+100,:]).save("{0}/{1}_000{2}.png".format(self.save_folder_patches,image_num+1,counter))
-        if (counter >=100) and (counter < 1000):
-          Image.fromarray(img[coord_x:coord_x+50,coord_y:coord_y+100,:]).save("{0}/{1}_00{2}.png".format(self.save_folder_patches,image_num+1,counter))
-        if (counter >=1000) and (counter < 10000):
-          Image.fromarray(img[coord_x:coord_x+50,coord_y:coord_y+100,:]).save("{0}/{1}_0{2}.png".format(self.save_folder_patches,image_num+1,counter))
-	counter = counter+1
-        print counter,": ",coord_x,"-",coord_y
-        coord_y = coord_y+nonoverlap
-        if coord_y >= 640-window_size[1]:
-          coord_x = coord_x+nonoverlap
-          coord_y = 0
-        if coord_x >= 480-window_size[0]:
-	  end_loop = 1
-          #break
-      print "segmentation with nonoverlap ",nonoverlap," done for image: ", image_num + 1
-
-      # here the some with nonoverlap = window size / e.g. puzzle ;) 
-      while (nonoverlap==0) and (p < (640/window_size[1])*(480/window_size[0])):
-	Image.fromarray(img[coord_x:coord_x+50,coord_y:coord_y+100,:]).save("{0}/{1}_{2}.png".format(self.save_folder_patches,image_num+1,counter))
-        print counter,": ",coord_x,"-",coord_y
-        coord_y = coord_y+window_size[1]
-        if coord_y >= 640-window_size[1]:
-          coord_x = coord_x+window_size[0]
-          coord_y = 0
-        if coord_x >= 480-window_size[0]:
-          break
-        p = p+1
-        counter = counter + 1
-      print "segmentation done for image: ", image_num + 1
-
+      if overlap > 0:
+	while end_loop == 0:
+	  Image.fromarray(img[coord_x:coord_x + window_size[0],
+		          coord_y:coord_y + window_size[1],:]).save("{0}/{1}_{2}_{3}.png".format(self.segmentations_folder,self.video_name,image_num+1,counter))
+	  counter = counter + 1
+	  print "Counter:", counter, "| rows:", coord_x, "->",coord_x + window_size[0], "| cols:", coord_y, "->", coord_y + window_size[1]
+	  coord_y = coord_y+overlap
+	  if coord_y >= img_width-window_size[1]:
+	    coord_x = coord_x+overlap
+	    coord_y = 0
+	  if coord_x >= img_height-window_size[0]:
+	    end_loop = 1
+	    #break
+	  
+      elif overlap == 0:
+	while counter < (img_width/window_size[1])*(img_height/window_size[0]):
+	  Image.fromarray(img[coord_x:coord_x + window_size[0],
+			  coord_y:coord_y + window_size[1],:]).save("{0}/{1}_{2}_{3}.png".format(self.segmentations_folder,self.video_name,image_num+1,counter))
+	  counter = counter + 1
+	  print "Counter:", counter, "| rows:", coord_x, "->",coord_x + window_size[0], "| cols:", coord_y, "->", coord_y + window_size[1]
+	  coord_y = coord_y+window_size[1]
+	  if coord_y >= img_width-window_size[1]:
+	    coord_x = coord_x+window_size[0]
+	    coord_y = 0
+	  if coord_x >= img_height-window_size[0]:
+	    break
+				       
+      else:
+	tkMessageBox.showinfo(title = "Error", message = "Overlap must be a positive number or 0")
+	return
+      
+      print "Video:" , self.video_name
+      print "-Segmentation with overlap",overlap,"done for frame:", image_num + 1
+      tkMessageBox.showinfo(title = "Congrats", message = "Segmentation done!")
+    
+    
     
     # move the train = 0 out of this function
     def sliding_window(self, window_size, image_num = 0, overlap = 0, pos = 0):
@@ -439,7 +452,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       counter = 0
       
       while p < (640/window_size[1])*(480/window_size[0]):
-	Image.fromarray(img[coord_x:coord_x+50,coord_y:coord_y+100,:]).save("{0}/{1}_{2}.png".format(self.save_folder_patches,image_num+1,counter))
+	Image.fromarray(img[coord_x:coord_x+50,coord_y:coord_y+100,:]).save("{0}/{1}_{2}.png".format(self.patches_folder,image_num+1,counter))
 	if p == 0:
 	  fop.write("patches/{0}_{1}.png 1 \n".format(image_num+1, counter))
 	else:
@@ -468,7 +481,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	if coord_x < 0:
 	  break      
 
-	Image.fromarray(img[coord_x:coord_x+50,coord_y:coord_y+100,:]).save("{0}/{1}_{2}.png".format(self.save_folder_patches,image_num + 1,counter))
+	Image.fromarray(img[coord_x:coord_x+50,coord_y:coord_y+100,:]).save("{0}/{1}_{2}.png".format(self.patches_folder,image_num + 1,counter))
 	fon.write("patches/{0}_{1}.png 0 \n".format(image_num + 1, counter))
 
 	p = p+1
@@ -538,14 +551,9 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       if not self.frames_folder:
 	tkMessageBox.showinfo(title = "Warning", message = "Load video frames directory first")
 	return
-      # check for 0 in rectangles
-      # count all zeros so you know how to split train and test
-      # shuffle data
-      print  "Frame Info: ",self.img_num,"/",self.video_num_of_frames
-      # print  self.read_num_of_images()  # total number of frames in the directory 
-      # print  self.rectangle_frame_pairs   # contains annotation rectangle
-      #print  self.curr_photoimage
-      self.image_segmentation((50,100), self.img_num, 0, 1)
+      
+      print  "Frame Info: ",self.img_num+1,"/",self.video_num_of_frames    
+      self.image_segmentation((self.rectangle_size[1],self.rectangle_size[0]), self.img_num, 0)
 
  
     
