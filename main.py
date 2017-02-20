@@ -1,6 +1,7 @@
 import Tkinter as tk  	# GUI 
 import tkFileDialog  # for browsing files
 import tkMessageBox # warning boxes
+import tkSimpleDialog # pop up window with entry
 import os	      	# system calls
 from PIL import ImageTk, Image # images in GUI and image processing 
 import dlib	      	# correlational tracker
@@ -387,7 +388,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       self.canvas.move(self.polygon_id, -curr_position[0]+rel_position[0], -curr_position[1]+rel_position[1])
     
        
-    def image_segmentation(self, window_size, image_num = 0, overlap = 0):
+    def image_segmentation(self, window_size, overlap = 0):
       img = self.curr_image_raw
       img_width = self.curr_photoimage.width()
       img_height = self.curr_photoimage.height()
@@ -400,7 +401,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       if overlap > 0:
 	while end_loop == 0:
 	  Image.fromarray(img[coord_x:coord_x + window_size[0],
-		          coord_y:coord_y + window_size[1],:]).save("{0}/{1}_{2}_{3}.png".format(self.segmentations_folder,self.video_name,image_num+1,counter))
+		          coord_y:coord_y + window_size[1],:]).save("{0}/{1}_{2}_{3}.png".format(self.segmentations_folder,self.video_name,self.img_num+1,counter))
 	  counter = counter + 1
 	  print "Counter:", counter, "| rows:", coord_x, "->",coord_x + window_size[0], "| cols:", coord_y, "->", coord_y + window_size[1]
 	  coord_y = coord_y+overlap
@@ -414,7 +415,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       elif overlap == 0:
 	while counter < (img_width/window_size[1])*(img_height/window_size[0]):
 	  Image.fromarray(img[coord_x:coord_x + window_size[0],
-			  coord_y:coord_y + window_size[1],:]).save("{0}/{1}_{2}_{3}.png".format(self.segmentations_folder,self.video_name,image_num+1,counter))
+			  coord_y:coord_y + window_size[1],:]).save("{0}/{1}_{2}_{3}.png".format(self.segmentations_folder,self.video_name,self.img_num+1,counter))
 	  counter = counter + 1
 	  print "Counter:", counter, "| rows:", coord_x, "->",coord_x + window_size[0], "| cols:", coord_y, "->", coord_y + window_size[1]
 	  coord_y = coord_y+window_size[1]
@@ -423,13 +424,9 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	    coord_y = 0
 	  if coord_x >= img_height-window_size[0]:
 	    break
-				       
-      else:
-	tkMessageBox.showinfo(title = "Error", message = "Overlap must be a positive number or 0")
-	return
-      
+				       	
       print "Video:" , self.video_name
-      print "-Segmentation with overlap",overlap,"done for frame:", image_num + 1
+      print "-Segmentation with overlap",overlap,"done for frame:", self.img_num + 1
       tkMessageBox.showinfo(title = "Congrats", message = "Segmentation done!")
     
     
@@ -552,8 +549,18 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	tkMessageBox.showinfo(title = "Warning", message = "Load video frames directory first")
 	return
       
-      print  "Frame Info: ",self.img_num+1,"/",self.video_num_of_frames    
-      self.image_segmentation((self.rectangle_size[1],self.rectangle_size[0]), self.img_num, 0)
+      overlap = None
+      overlap = tkSimpleDialog.askinteger("Overlap","Choose an overlap")
+      if overlap == None:
+	tkMessageBox.showinfo(title = "Error", message = "Overlap was not entered")
+	return
+      
+      if overlap < 0:
+	tkMessageBox.showinfo(title = "Error", message = "Overlap must be a positive number or 0")
+	return
+     
+
+      self.image_segmentation((self.rectangle_size[1],self.rectangle_size[0]), overlap)
 
  
     
