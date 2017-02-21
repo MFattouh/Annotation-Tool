@@ -48,6 +48,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	    args.output_folder += "/"
 	  output_folder += args.output_folder
 	output_folder = os.path.abspath(output_folder) + "/"
+	self.output_folder = output_folder
 	
 	# videos folder
         videos_folder = main_folder + "videos/"
@@ -88,10 +89,6 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         if not os.path.exists(mask_folder):
 	  os.makedirs(mask_folder)
         self.mask_folder = mask_folder
-        
-        # for non-patch approach, the content won't matter
-        self.save_folder_txt = os.path.abspath("/home/mohamed/Desktop/Opto/AnnotationTool/Pendulum/") ##?
-	
 	
 	###### GUI #####
 	self.title("Data annotation")
@@ -125,7 +122,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	button4_window = self.canvas.create_window(300, 10, anchor="nw", window=button4)
 
         button5 = tk.Button(self.canvas, text = "Segment patches for current frame", command = self.extract_patches_tf, anchor = "w")
-        button5.configure(width = 25)
+        button5.configure(width = 27)
         button5.pack()
         button5_window = self.canvas.create_window(500, 10, anchor="nw", window=button5)
 
@@ -204,7 +201,12 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         # load the first video frames
         self.load_frames(self.list_of_videos[self.video_index])
         
-
+    def load_annotations_from_file(self,file_name):
+      f = file(file_name, 'rb')
+      frame_rectangle_pairs = cPickle.load(f)
+      f.close()
+      return frame_rectangle_pairs 
+    
     def create_mask(self,save_option):   
       # check if there is a frame folder loaded first
       if not self.frames_folder:
@@ -227,12 +229,31 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	  tkMessageBox.showinfo(title = "Mask created", message = "saved as mat files")	
 
 		
-    def create_token(self, coord, color, rectangle_size):
+    def create_token(self, center_rectangle, color, rectangle_size):
         # Create a token at the given coordinate in the given color'''
-        (x,y) = coord
+        (x,y) = center_rectangle
         ####print "X", x
         ####print "Y", y
-	self.polygon_id = self.canvas.create_polygon(x,y,x+rectangle_size[0],y,x+rectangle_size[0],y+rectangle_size[1],x,y+rectangle_size[1], outline=color, fill='', tags="token")
+        # left upper corner
+        l_u_c_x = x - rectangle_size[0]/2
+        l_u_c_y = y - rectangle_size[1]/2
+         
+        # left bottom corner
+        l_b_c_x =  x - rectangle_size[0]/2
+        l_b_c_y =  y + rectangle_size[1]/2
+        
+        # right upper corner
+        r_u_c_x =  x + rectangle_size[0]/2
+        r_u_c_y = y - rectangle_size[1]/2
+        
+        # right bottom corner
+        r_b_c_x = x + rectangle_size[0]/2
+        r_b_c_y = y + rectangle_size[1]/2
+	self.polygon_id = self.canvas.create_polygon(l_u_c_x, l_u_c_y, 
+						     r_u_c_x, r_u_c_y, 
+						     r_b_c_x, r_b_c_y, 
+						     l_b_c_x, l_b_c_y, 
+						      outline=color, fill='', tags="token")
     
     
     # or maybe use yield for reading next image
@@ -286,7 +307,9 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       self.video_num_of_frames = self.list_number_of_frames[self.video_index]
       
       self.rectangle_frame_pairs = [0]*self.video_num_of_frames
-      self.img_id = self.canvas.create_image(100, 100, image = self.curr_photoimage, anchor="nw") #, anchor = NW
+      img_start_x = 100
+      img_start_y = 100
+      self.img_id = self.canvas.create_image(img_start_x, img_start_y, image = self.curr_photoimage, anchor="nw") #, anchor = NW
       
       
       # this data is used to keep track of an 
@@ -300,7 +323,9 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       # rectangle size in x and y
       self.rectangle_size = [100, 50]
       
-      self.create_token((100, 100), "blue", self.rectangle_size) # in here tags="token" assigned 
+      img_width = self.curr_photoimage.width()
+      img_height = self.curr_photoimage.height()
+      self.create_token((img_width/2 + img_start_x, img_height/2 + img_start_y), "blue", self.rectangle_size) # in here tags="token" assigned 
       
       # add bindings for clicking, dragging and releasing over
       # any object with the "token" tag
@@ -355,10 +380,9 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       ''' Get coordinates of rectangle relative to image '''
       coords_rectangle = self.canvas.coords(self.polygon_id)
       coords_rectangle = [long(c) for c in coords_rectangle]
-      coords_image = self.canvas.coords(self.img_id)
+      coords_image = self.canvas.coords(self.img_id) 
       coords_image = [long(c) for c in coords_image]
       coords_relative = [coords_rectangle[0]-coords_image[0],coords_rectangle[1]-coords_image[1],coords_rectangle[4]-coords_image[0],coords_rectangle[5]-coords_image[1]]
-      
       return coords_relative      
     
     def change_image(self):
@@ -431,117 +455,116 @@ class SampleApp(tk.Tk):  # inherit from Tk class
     
     
     
-    # move the train = 0 out of this function
-    def sliding_window(self, window_size, image_num = 0, overlap = 0, pos = 0):
+   
+    def sliding_window(self, window_size, image_num = 0, overlap = 0):
            
-      file_pos = os.path.join(self.save_folder_txt, "pos.txt")
-      file_neg = os.path.join(self.save_folder_txt, "neg.txt")
+      file_pos = os.path.join(self.output_folder, "pos.txt")
+      file_neg = os.path.join(self.output_folder, "neg.txt")
       
       fop = open(file_pos, "a")
       fon = open(file_neg, "a")
       self.read_image_from_file(image_num)
       img = self.curr_image_raw
-
+      img_width = self.curr_photoimage.width()
+      img_height = self.curr_photoimage.height()
+      
       coord_relative = self.rectangle_frame_pairs[image_num]
       coord_x = coord_relative[1]
       coord_y = coord_relative[0]
       p = 0
       counter = 0
       
-      while p < (640/window_size[1])*(480/window_size[0]):
-	Image.fromarray(img[coord_x:coord_x+50,coord_y:coord_y+100,:]).save("{0}/{1}_{2}.png".format(self.patches_folder,image_num+1,counter+1))
+      while p < (img_width/window_size[1])*(img_height/window_size[0]):
+	
+	Image.fromarray(img[coord_x:coord_x+window_size[0],
+			coord_y:coord_y+window_size[1],:]).save("{0}/{1}_{2}_{3}.png".format(self.patches_folder,self.video_name,image_num+1,counter+1))
 	if p == 0:
-	  fop.write("patches/{0}_{1}.png 1 \n".format(image_num+1, counter))
+	  fop.write("{0}_{1}_{2}.png 1 \n".format(self.video_name, image_num+1, counter+1))
 	else:
-	  fon.write("patches/{0}_{1}.png 0 \n".format(image_num+1, counter))
+	  fon.write("{0}_{1}_{2}.png 0 \n".format(self.video_name, image_num+1, counter+1))
 	  
+	#print "Counter:", p+1, "| rows:", coord_x, "->",coord_x + window_size[0], "| cols:", coord_y, "->", coord_y + window_size[1]
 	coord_y = coord_y+window_size[1]
 	#proverka dali odi vo nov red, proveri na mal primer
-	if coord_y >= 640-window_size[1]:
+	if coord_y >= img_width-window_size[1]:
 	  coord_x = coord_x+window_size[0]
 	  coord_y = 0
-	if coord_x >= 480-window_size[0]:
+	if coord_x >= img_height-window_size[0]:
 	  break
 	
 	p = p+1
+	
 	counter = counter + 1
+	
       p = 0
       coord_x = coord_relative[1]
       coord_y = coord_relative[0]
-      
-      while p < (640/window_size[1])*(480/window_size[0]):
+      while p < (img_width/window_size[1])*(img_height/window_size[0]):
+	p = p+1
 	coord_y = coord_y-window_size[1]
 	# it should print it down for (0,0), 
 	if coord_y < 0:
 	  coord_x = coord_x-window_size[0]
-	  coord_y = 640-window_size[1]
+	  coord_y = img_width-window_size[1]
 	if coord_x < 0:
 	  break      
 
-	Image.fromarray(img[coord_x:coord_x+50,coord_y:coord_y+100,:]).save("{0}/{1}_{2}.png".format(self.patches_folder,image_num + 1,counter+1))
-	fon.write("patches/{0}_{1}.png 0 \n".format(image_num + 1, counter))
+	Image.fromarray(img[coord_x:coord_x+window_size[0],
+			coord_y:coord_y+window_size[1],:]).save("{0}/{1}_{2}_{3}.png".format(self.patches_folder,self.video_name,image_num + 1,counter+1))
+	fon.write("{0}_{1}_{2}.png 0 \n".format(self.video_name,image_num + 1, counter+1))
 
-	p = p+1
+	
 	counter = counter + 1
       
       fop.close()
       fon.close()
       # or maybe instead of this, create non-overlapping windows, but that way it can miss
       # the positive sample
-	
-      # stavi tuka prefiksi na slikite
-    
-    
-    #print self.patches.shape
-    #for p in range(0,len(patches)):
-      #im = Image.fromarray(patches[p])
-      #im.save("test{0}.png".format(p))
       print "patches successfully saved for image: ", image_num + 1
+
+
+
+
+
 
     def extract_patches(self):
       # check if there is a frame folder loaded first
       if not self.frames_folder:
 	tkMessageBox.showinfo(title = "Warning", message = "Load video frames directory first")
 	return
-      # check for 0 in rectangles
-      # count all zeros so you know how to split train and test
-      # shuffle data
-      # or maybe put NaN and count nans
+       
+      # check if there is annotated model for the current video
+      model_annot_name = os.path.join(self.annot_save_folder, self.video_name + ".model")
+      if not os.path.exists(model_annot_name):
+	tkMessageBox.showinfo(title = "Warning", message = "Annotated model doesn't exist for this video")
       
-      counter = 0 # saves the number of annotations done
-      for rect in self.rectangle_frame_pairs:
-	if rect is not 0:
-	  counter = counter + 1
-
-      print counter," many annotations" 
-      print self.rectangle_frame_pairs[50] 
-      print self.rectangle_frame_pairs[105]
-      print "call sliding_window on frame 105"
-      self.sliding_window ((50,100), 105, 0, 0)
+      else:
+	annotated_frames_rectangle_pairs = self.load_annotations_from_file(model_annot_name)
+	
+	num_of_annotations = 0 # saves the number of annotations done
+	for rect in annotated_frames_rectangle_pairs:
+	  if rect is not 0:
+	    num_of_annotations += 1
+	print num_of_annotations,"annotations" 
+  
+	index_annotation = 0
+	image_number = 0
+	
+	while index_annotation < num_of_annotations:
+	  if annotated_frames_rectangle_pairs[image_number] <> 0:
+	    self.sliding_window ((self.rectangle_size[1],self.rectangle_size[0]), image_number, 0)
+	    index_annotation += 1
+	  image_number += 1
+	
+	# check verbose
+	print "patches were saved congrats to you!!!"
+	
+  
+  
+     
  
-      # split into training and test and save in file
-      #stop_training = int(counter*0.75)
-      stop_training = counter
-      # this can go in one while document
-      c = 0
-      c1 = 0
-      while c < stop_training:
-	if self.rectangle_frame_pairs[c1] <> 0:
-	  self.sliding_window ((50,100), c1, 0, 0)
-	  c = c + 1
-	c1 = c1+1
-      
-      while c < counter:
-	if self.rectangle_frame_pairs[c1] <> 0:
-	  self.sliding_window ((50,100), c1, 0, 1)
-	  c = c+1
-	c1 = c1+1
-      
-      # check verbose
-      print "patches were saved congrats to you!!!"
-      
-      
-      #self._sliding_window((50,100),0,0)
+   
+   
    
     def extract_patches_tf(self):
       # check if there is a frame folder loaded first
@@ -561,9 +584,9 @@ class SampleApp(tk.Tk):  # inherit from Tk class
      
 
       self.image_segmentation((self.rectangle_size[1],self.rectangle_size[0]), overlap)
-  
-
  
+ 
+
     
     
     def save(self):
@@ -604,28 +627,28 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       if not os.path.exists(model_annot_name):
 	tkMessageBox.showinfo(title = "Info", message = "No existing annotation model")
 	return
-            
-      f = file(model_annot_name, 'rb')
-      previous_frames = cPickle.load(f)
-      
-
+           
+      previous_frames = self.load_annotations_from_file(model_annot_name)
       self.rectangle_frame_pairs[0:len(previous_frames)] = previous_frames  
-      f.close()
       
       if (self.rectangle_frame_pairs[self.img_num] is not 0):
-	self.change_rectangle() 
+	self.change_rectangle()
+	self.canvas.itemconfig(self.polygon_id, outline = "red") 
       
       counter = 0
       for x in self.rectangle_frame_pairs:
 	if x is not 0:
 	  counter = counter + 1
       self.frame_annot_label.winfo_children()[0].config(text="Annotated frames: {0:0{width}}/{1}".format(counter, len(self.rectangle_frame_pairs), width=3))
+      
       tkMessageBox.showinfo(title = "Info", message = "Annotation model loaded")
-      
-      
+       
     
     def rightKey(self, event):
-      self.img_num +=1
+      # change coordinates
+      # self.canvas.coords(self.polygon_id,100,100,500,100,500,500,100,500)
+      
+      self.img_num +=1 
       if self.img_num >= self.video_num_of_frames:
 	save_annot = "no"
 	save_annot = tkMessageBox.askquestion("End of video frames", "Save annotations?", icon = "warning")
@@ -672,8 +695,22 @@ class SampleApp(tk.Tk):  # inherit from Tk class
     
     def returnKey(self, event):
         #save rectangle position
-        self.rectangle_frame_pairs[self.img_num] = self.get_coord_rectangle()          
+        img_width = self.curr_photoimage.width()
+	img_height = self.curr_photoimage.height()
+	
+        self.rectangle_frame_pairs[self.img_num] = self.get_coord_rectangle()      
 	coords_relative = self.get_coord_rectangle()
+	
+	#check if there was bad annotations
+	# rectangle is defined by left top corner and right bottom corner
+	left_upper_x = coords_relative[0]
+	left_upper_y = coords_relative[1]
+	right_bottom_x = coords_relative[2]
+	right_bottom_y = coords_relative[3]
+	
+	if left_upper_x < 0 or left_upper_y <0 or right_bottom_x >= img_width or right_bottom_y >= img_height:
+	  tkMessageBox.showinfo(title = "Info", message = "Bad annotation, try again")
+	  return
 	
 	if (self.flag == 0):  
 	  #proveri uste ednas koordinatite
@@ -682,6 +719,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	  self.flag = 1 
 	  
         else: 
+	  
 	  #update filter
 	  self.tracker.update(self.curr_image_raw, dlib.rectangle(coords_relative[0],coords_relative[1],coords_relative[2],coords_relative[3]))
 	  
