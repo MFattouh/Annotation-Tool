@@ -24,59 +24,6 @@ class SampleApp(tk.Tk):  # inherit from Tk class
     def __init__(self):
         tk.Tk.__init__(self)
 	
-	# Folder settings
-	
-	# main folder
-	current_dir = os.getcwd() + "/"
-        main_folder = current_dir
-        if args.main_folder is None:
-	  print "WARNING!! main folder path was not passed (default: current directory)"
-	else:
-	  if args.main_folder[-1] != "/":
-	    args.main_folder += "/"
-	  main_folder += args.main_folder
-	main_folder = os.path.abspath(main_folder) + "/"
-	# change directory to main folder
-        os.chdir(main_folder)
-        
-        # output folder
-	output_folder = current_dir
-	if args.output_folder is None:
-	  print "WARNING!! output folder path was not passed (default: current directory)"
-	else:
-	  if args.output_folder[-1] != "/":
-	    args.output_folder += "/"
-	  output_folder += args.output_folder
-	output_folder = os.path.abspath(output_folder) + "/"
-	self.output_folder = output_folder
-	
-	# videos folder
-        videos_folder = main_folder + "videos/"
-        # check if the videos folders exists
-        if not os.path.isdir(videos_folder):
-	  print "Error: Main directory " + main_folder + " doesn't contain a folder named videos " 
-	  exit(1)
-	
-        # frames folder
-        frames_folder_path = output_folder + "frames/"
-        # check if the frames folder exists
-        if not os.path.exists(frames_folder_path):
-	  # create a folder for the frames
-	  os.makedirs(frames_folder_path)
-        self.frames_folder = frames_folder_path
-	
-        # annnotations folder
-        annotation_folder = output_folder + "annotations/"
-        #check if already exists
-        if not os.path.exists(annotation_folder):
-	  os.makedirs(annotation_folder)
-        self.annot_save_folder = os.path.abspath(annotation_folder)
-        
-        # masks folder
-        mask_folder =  os.path.join(output_folder,"masks/")
-        if not os.path.exists(mask_folder):
-	  os.makedirs(mask_folder)
-        self.mask_folder = mask_folder
 	
 	###### GUI #####
 	self.title("Data annotation")
@@ -172,17 +119,67 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 
 
 	
+	# Folder settings
 	
+	# main folder
+	current_dir = os.getcwd() + "/"
+        main_folder = current_dir
+        if args.main_folder is None:
+	  print "WARNING!! main folder path was not passed (default: current directory)"
+	else:
+	  main_folder += args.main_folder
+	main_folder = os.path.abspath(main_folder) + "/"
+	# change directory to main folder
+        os.chdir(main_folder)
+        
+        # output folder
+	output_folder = current_dir
+	if args.output_folder is None:
+	  print "WARNING!! output folder path was not passed (default: current directory)"
+	else:
+	  output_folder += args.output_folder
+	output_folder = os.path.abspath(output_folder) + "/"
+	self.output_folder = output_folder
 	
-	#print self.frame_info_label.winfo_children()[0].config(text="asdas")
-        #label_num_frames_window = self.canvas.create_window(800, 140, anchor="nw", window=self.label_num_frames)
-        """
-        self.label_frame_path = tk.Label(self.canvas, text="Frame path:{0}".format(os.path.join(self.frames_folder, "{0}.png".format(self.img_num+1))), fg="red", font=('Helvetica',14), highlightbackground = "black", highlightthickness=1)
-	self.label_frame_path.pack()
-        label_frame_path_window = self.canvas.create_window(800, 240, anchor="nw", window=self.label_frame_path)
-	"""
-	# ectract frames
-        extract_frames_from_videos(videos_folder, args.videos, frames_folder_path, args.fps)
+	# videos folder
+        videos_folder = main_folder + "videos/"
+        # check if the videos folders exists
+        if not os.path.isdir(videos_folder):
+	  print "Error: Main directory " + main_folder + " doesn't contain a folder named videos " 
+	  exit(1)
+	
+        # annnotations folder
+        annotation_folder = output_folder + "annotations/"
+        #check if already exists
+        if not os.path.exists(annotation_folder):
+	  os.makedirs(annotation_folder)
+        self.annot_save_folder = os.path.abspath(annotation_folder)
+        
+        # masks folder
+        mask_folder =  os.path.join(output_folder,"masks/")
+        if not os.path.exists(mask_folder):
+	  os.makedirs(mask_folder)
+        self.mask_folder = mask_folder
+        
+        # frames folder
+        if args.frames_folder is not None:
+	  frames_folder_path = current_dir + args.frames_folder
+	  self.frames_folder = os.path.abspath(frames_folder_path) + "/"
+	  # check if the directory is empty
+	  if os.listdir(self.frames_folder) == []:
+	    print "Error: No frames in", self.frames_folder
+	    exit(1)
+	  
+	else:
+	  frames_folder_path = output_folder + "frames/"
+	  # check if the frames folder exists
+	  if not os.path.exists(frames_folder_path):
+	    # create a folder for the frames
+	    os.makedirs(frames_folder_path)
+	  self.frames_folder = frames_folder_path
+	  # extract frames
+	  extract_frames_from_videos(videos_folder, args.videos, frames_folder_path, args.fps)
+	  
         
         # get list of videos and the number of their frames
         self.get_number_of_videos_and_frames()
@@ -190,7 +187,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         
         # check if a video file was passed to show its frames first
         video = None
-        if args.videos is not None:
+        if args.videos is not None and args.frames_folder is not None:
 	  video = get_video_file_name(args.videos)
 	  video = video + "_fps_" + str(args.fps)
         
@@ -305,7 +302,6 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       # list of number of frames for each video of the above list
       self.list_number_of_frames = []
       video_frame_number = -1
-      
       for root, dirs, frames in os.walk(self.frames_folder):
 	for frame in frames:
 	  video_name = frame[0:frame.rfind('_')]
@@ -533,9 +529,9 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       img_width = self.curr_photoimage.width()
       img_height = self.curr_photoimage.height()
       
-      coord_relative = self.rectangle_frame_pairs[image_num]
-      coord_x = coord_relative[1]
-      coord_y = coord_relative[0]
+      coords_relative = self.rectangle_frame_pairs[image_num]
+      coord_x = coords_relative[1]
+      coord_y = coords_relative[0]
       p = 0
       counter = 0
       
@@ -564,8 +560,8 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	counter = counter + 1
 	
       p = 0
-      coord_x = coord_relative[1]
-      coord_y = coord_relative[0]
+      coord_x = coords_relative[1]
+      coord_y = coords_relative[0]
       while p < (img_width/window_size[1])*(img_height/window_size[0]):
 	p = p+1
 	coord_y = coord_y-window_size[1]
@@ -767,7 +763,6 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         img_width = self.curr_photoimage.width()
 	img_height = self.curr_photoimage.height()
 	
-        self.rectangle_frame_pairs[self.img_num] = self.get_coord_rectangle()      
 	coords_relative = self.get_coord_rectangle()
 	
 	#check if there was bad annotations
@@ -782,6 +777,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	  tkMessageBox.showinfo(title = "Info", message = "Bad annotation, try again")
 	  return
 	
+	self.rectangle_frame_pairs[self.img_num] = coords_relative
 	if (self.flag == 0):  
 	  #proveri uste ednas koordinatite
 	  self.tracker.start_track(self.curr_image_raw, dlib.rectangle(coords_relative[0],coords_relative[1],coords_relative[2],coords_relative[3]))
@@ -876,6 +872,8 @@ if __name__ == "__main__":
 		      help = "frames per second (default: 24 fps)")
   parser.add_argument("-of", dest = "output_folder", type = str, 
 		      help = "path to an output folder (default: current directory)")
+  parser.add_argument("-ff", dest = "frames_folder", type = str,
+		      help = "path to frame folder (pass if no extraction needed)")
   args = parser.parse_args()
   
   from skimage import io # image read and conversion to array # had to import it here (conflicts with the args passed)
