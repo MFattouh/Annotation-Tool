@@ -211,6 +211,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	  self.video_index = self.list_of_videos.index(video)
         
         # load the first video frames
+        self.img_num = 0
         self.load_frames(self.list_of_videos[self.video_index])
         
         
@@ -353,7 +354,6 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       self.video_name = video_name
     
       # set image counter
-      self.img_num = 0
       self.read_image_from_file()  # read figure in self.curr_photoimage
       self.create_photo_from_raw()
       
@@ -743,9 +743,9 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	  self.video_index = self.total_num_of_videos-1
 	
 	# load frames of the previous video
-	self.load_frames(self.list_of_videos[self.video_index])
+	self.img_num = self.list_number_of_frames[self.video_index] - 1
 	
-	self.img_num = self.video_num_of_frames - 1
+	self.load_frames(self.list_of_videos[self.video_index])
 	
 	# if rectangle exists redraw it
       if (self.rectangle_frame_pairs[self.img_num] is not 0):
