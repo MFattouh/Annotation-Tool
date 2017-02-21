@@ -64,12 +64,6 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	  # create a folder for the frames
 	  os.makedirs(frames_folder_path)
         self.frames_folder = frames_folder_path
-        
-	# patches folder
-        patches_folder_path = output_folder + "patches/"
-        if not os.path.exists(patches_folder_path):
-	  os.makedirs(patches_folder_path)    
-	self.patches_folder = patches_folder_path
 	
         # annnotations folder
         annotation_folder = output_folder + "annotations/"
@@ -515,7 +509,20 @@ class SampleApp(tk.Tk):  # inherit from Tk class
     
    
     def sliding_window(self, window_size, image_num = 0, overlap = 0):
-           
+      
+      # pos patches folder
+      patches_pos_size = "patches_pos_" + str(self.rectangle_size[0]) + "x" + str(self.rectangle_size[1]) 
+      patches_folder_pos = self.output_folder +  patches_pos_size + "/"
+      if not os.path.exists(patches_folder_pos):
+	os.makedirs(patches_folder_pos)
+	
+      # neg patches folder
+      patches_neg_size = "patches_neg_" + str(self.rectangle_size[0]) + "x" + str(self.rectangle_size[1])
+      patches_folder_neg = self.output_folder + patches_neg_size + "/"
+      if not os.path.exists(patches_folder_neg):
+	os.makedirs(patches_folder_neg)    
+      
+      
       file_pos = os.path.join(self.output_folder, "pos.txt")
       file_neg = os.path.join(self.output_folder, "neg.txt")
       
@@ -534,12 +541,14 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       
       while p < (img_width/window_size[1])*(img_height/window_size[0]):
 	
-	Image.fromarray(img[coord_x:coord_x+window_size[0],
-			coord_y:coord_y+window_size[1],:]).save("{0}/{1}_{2}_{3}.png".format(self.patches_folder,self.video_name,image_num+1,counter+1))
 	if p == 0:
-	  fop.write("{0}_{1}_{2}.png 1 \n".format(self.video_name, image_num+1, counter+1))
+	  fop.write("{0}/{1}_{2}_{3}.png 1 \n".format(patches_pos_size,self.video_name, image_num+1, counter+1))
+	  Image.fromarray(img[coord_x:coord_x+window_size[0],
+			coord_y:coord_y+window_size[1],:]).save("{0}/{1}_{2}_{3}.png".format(patches_folder_pos,self.video_name,image_num+1,counter+1))
 	else:
-	  fon.write("{0}_{1}_{2}.png 0 \n".format(self.video_name, image_num+1, counter+1))
+	  fon.write("{0}/{1}_{2}_{3}.png 0 \n".format(patches_neg_size,self.video_name, image_num+1, counter+1))
+	  Image.fromarray(img[coord_x:coord_x+window_size[0],
+			coord_y:coord_y+window_size[1],:]).save("{0}/{1}_{2}_{3}.png".format(patches_folder_neg,self.video_name,image_num+1,counter+1))
 	  
 	#print "Counter:", p+1, "| rows:", coord_x, "->",coord_x + window_size[0], "| cols:", coord_y, "->", coord_y + window_size[1]
 	coord_y = coord_y+window_size[1]
@@ -568,8 +577,8 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	  break      
 
 	Image.fromarray(img[coord_x:coord_x+window_size[0],
-			coord_y:coord_y+window_size[1],:]).save("{0}/{1}_{2}_{3}.png".format(self.patches_folder,self.video_name,image_num + 1,counter+1))
-	fon.write("{0}_{1}_{2}.png 0 \n".format(self.video_name,image_num + 1, counter+1))
+			coord_y:coord_y+window_size[1],:]).save("{0}/{1}_{2}_{3}.png".format(patches_folder_neg,self.video_name,image_num + 1,counter+1))
+	fon.write("{0}/{1}_{2}_{3}.png 0 \n".format(patches_neg_size,self.video_name, image_num+1, counter+1))
 
 	
 	counter = counter + 1
