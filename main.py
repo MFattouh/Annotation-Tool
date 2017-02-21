@@ -71,12 +71,6 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	  os.makedirs(patches_folder_path)    
 	self.patches_folder = patches_folder_path
 	
-	# segmentations folder
-	segmentation_folder_path = output_folder + "segmentations/"
-	if not os.path.exists(segmentation_folder_path):
-	  os.makedirs(segmentation_folder_path)
-	self.segmentations_folder = segmentation_folder_path
-	
         # annnotations folder
         annotation_folder = output_folder + "annotations/"
         #check if already exists
@@ -471,6 +465,11 @@ class SampleApp(tk.Tk):  # inherit from Tk class
     
        
     def image_segmentation(self, window_size, overlap = 0):
+      # segmentations folder
+      segmentation_folder = self.output_folder + "segmentations_"+ str(self.rectangle_size[0]) + "x" + str(self.rectangle_size[1]) +"/"
+      if not os.path.exists(segmentation_folder):
+	os.makedirs(segmentation_folder)
+   
       img = self.curr_image_raw
       img_width = self.curr_photoimage.width()
       img_height = self.curr_photoimage.height()
@@ -483,9 +482,9 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       if overlap > 0:
 	while end_loop == 0:
 	  Image.fromarray(img[coord_x:coord_x + window_size[0],
-		          coord_y:coord_y + window_size[1],:]).save("{0}/{1}_{2}_{3}.png".format(self.segmentations_folder,self.video_name,self.img_num+1,counter+1))
+		          coord_y:coord_y + window_size[1],:]).save("{0}/{1}_{2}_{3}.png".format(segmentation_folder,self.video_name,self.img_num+1,counter+1))
 	  counter = counter + 1
-	  print "Counter:", counter, "| rows:", coord_x, "->",coord_x + window_size[0], "| cols:", coord_y, "->", coord_y + window_size[1]
+	  print "Counter:", counter, "| rows:", coord_x, "->",coord_x + window_size[1], "| cols:", coord_y, "->", coord_y + window_size[0]
 	  coord_y = coord_y+overlap
 	  if coord_y >= img_width-window_size[1]:
 	    coord_x = coord_x+overlap
@@ -497,7 +496,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       elif overlap == 0:
 	while counter < (img_width/window_size[1])*(img_height/window_size[0]):
 	  Image.fromarray(img[coord_x:coord_x + window_size[0],
-			  coord_y:coord_y + window_size[1],:]).save("{0}/{1}_{2}_{3}.png".format(self.segmentations_folder,self.video_name,self.img_num+1,counter+1))
+			  coord_y:coord_y + window_size[1],:]).save("{0}/{1}_{2}_{3}.png".format(segmentation_folder,self.video_name,self.img_num+1,counter+1))
 	  counter = counter + 1
 	  print "Counter:", counter, "| rows:", coord_x, "->",coord_x + window_size[0], "| cols:", coord_y, "->", coord_y + window_size[1]
 	  coord_y = coord_y+window_size[1]
@@ -508,7 +507,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	    break
 				       	
       print "Video:" , self.video_name
-      print "-Segmentation with overlap",overlap,"done for frame:", self.img_num + 1
+      print "-Segmentation with overlap",overlap,"done for frame:", self.img_num + 1, "|height:", self.rectangle_size[1],"|width:", self.rectangle_size[0] 
       tkMessageBox.showinfo(title = "Congrats", message = "Segmentation done!")
     
     
@@ -599,11 +598,8 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       else:
 	annotated_frames_rectangle_pairs = self.load_annotations_from_file(model_annot_name)
 	
-	num_of_annotations = 0 # saves the number of annotations done
-	for rect in annotated_frames_rectangle_pairs:
-	  if rect is not 0:
-	    num_of_annotations += 1
-	print num_of_annotations,"annotations" 
+	num_of_annotations = sum([int(i !=0) for i in self.rectangle_frame_pairs])
+	print num_of_annotations, "annotations"
   
 	index_annotation = 0
 	image_number = 0
@@ -644,9 +640,11 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	tkMessageBox.showinfo(title = "Warning", message = "Load video frames directory first")
 	return
       
-      # check if the # of frames is consistent with the # annotated frames
+      # don"t save if there is not at least one annotated frame
       number_of_annotaded_frames = sum([int(i !=0) for i in self.rectangle_frame_pairs])
-   
+      if number_of_annotaded_frames == 0:
+	tkMessageBox.showinfo(title = "Warning", message = "At least annotate one frame!")
+	return
       
       
       # check if there is already a model 
