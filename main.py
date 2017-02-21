@@ -302,19 +302,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 						     r_b_c_x, r_b_c_y, 
 						     l_b_c_x, l_b_c_y, 
 						      outline=color, fill='', tags="token")
-    
-    
-    # or maybe use yield for reading next image
-    def read_num_of_images(self):
-        path_list = glob.glob(os.path.join(self.frames_folder, "*.png"))
-
-	return len(path_list)
-	#img_raw = io.imread(f)
-	#print len(img_raw)
-	#print f
-	#self.images_raw.append(img_raw)
-	#self.images.append(ImageTk.PhotoImage(image = Image.fromarray(img_raw)))
-	
+    	
 	
     def get_number_of_videos_and_frames(self):
       # list of different video names
@@ -469,7 +457,17 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       segmentation_folder = self.output_folder + "segmentations_"+ str(self.rectangle_size[0]) + "x" + str(self.rectangle_size[1]) +"/"
       if not os.path.exists(segmentation_folder):
 	os.makedirs(segmentation_folder)
-   
+      
+      # make sure to delete any segments that existed before
+      counter = 0
+      while(1):
+	segment_file = "{0}/{1}_{2}_{3}.png".format(segmentation_folder,self.video_name, self.img_num+1,counter+1)
+	if os.path.exists(segment_file):
+	  os.remove(segment_file)
+	else:
+	  break
+	counter += 1
+	
       img = self.curr_image_raw
       img_width = self.curr_photoimage.width()
       img_height = self.curr_photoimage.height()
@@ -492,6 +490,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	  if coord_x >= img_height-window_size[0]:
 	    end_loop = 1
 	    #break
+	    
 	  
       elif overlap == 0:
 	while counter < (img_width/window_size[1])*(img_height/window_size[0]):
@@ -505,6 +504,8 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	    coord_y = 0
 	  if coord_x >= img_height-window_size[0]:
 	    break
+	  
+	
 				       	
       print "Video:" , self.video_name
       print "-Segmentation with overlap",overlap,"done for frame:", self.img_num + 1, "|height:", self.rectangle_size[1],"|width:", self.rectangle_size[0] 
@@ -598,7 +599,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       else:
 	annotated_frames_rectangle_pairs = self.load_annotations_from_file(model_annot_name)
 	
-	num_of_annotations = sum([int(i !=0) for i in self.rectangle_frame_pairs])
+	num_of_annotations = sum([int(i !=0) for i in annotated_frames_rectangle_pairs])
 	print num_of_annotations, "annotations"
   
 	index_annotation = 0
