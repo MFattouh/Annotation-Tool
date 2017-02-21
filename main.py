@@ -680,10 +680,6 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       previous_frames = self.load_annotations_from_file(model_annot_name)
       self.rectangle_frame_pairs[0:len(previous_frames)] = previous_frames  
       
-      if (self.rectangle_frame_pairs[self.img_num] is not 0):
-	self.change_rectangle()
-	self.canvas.itemconfig(self.polygon_id, outline = "red") 
-      
       counter = 0
       done = False
       w = 0
@@ -698,8 +694,12 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	    h = x[3] - x[1]
 
       self.rectangle_change_size("both", w , h)
+      if (self.rectangle_frame_pairs[self.img_num] is not 0):
+	self.change_rectangle()
+	self.canvas.itemconfig(self.polygon_id, outline = "red")
       self.frame_annot_label.winfo_children()[0].config(text="Annotated frames: {0:0{width}}/{1}".format(counter, len(self.rectangle_frame_pairs), width=3))
       tkMessageBox.showinfo(title = "Info", message = "Annotation model loaded")
+      
        
     
     def rightKey(self, event):      
