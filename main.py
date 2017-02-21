@@ -163,15 +163,27 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	self.mask_label = tk.LabelFrame(self.canvas, text = "Create mask as:", padx = 5, pady =5)
 	self.mask_label.pack()
 	self.canvas.create_window(800,10, anchor = "nw", window = self.mask_label)
-
-	
 	button7 = tk.Button(self.mask_label, text = "Images", command = lambda: self.create_mask("image"), anchor = "w")
 	button7.configure(width= 5)
-	button7.pack()
-	
+	button7.pack(side = tk.LEFT)
 	button8 = tk.Button(self.mask_label, text = "Mat", command = lambda: self.create_mask("mat"), anchor = "w")
 	button8.configure(width= 5)
-	button8.pack()
+	button8.pack(side = tk.LEFT)
+	
+	
+	# Rectangle size window
+	self.rectangle_label = tk.LabelFrame(self.canvas, text = "Rectangle size:", padx = 5, pady =5)
+	self.rectangle_label.pack()
+	self.canvas.create_window(1000,10,anchor = "nw", window = self.rectangle_label,width = 100)
+	button9 = tk.Button(self.rectangle_label, text = "w:",command = lambda: self.rectangle_change_size("w"))
+	button9.configure(width = 25)
+	button9.pack()
+	button10 = tk.Button(self.rectangle_label, text = "h:",command = lambda: self.rectangle_change_size("h"))
+	button10.configure(width = 25)
+	button10.pack()
+
+
+	
 	
 	
 	#print self.frame_info_label.winfo_children()[0].config(text="asdas")
@@ -200,6 +212,47 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         
         # load the first video frames
         self.load_frames(self.list_of_videos[self.video_index])
+        
+        
+    def rectangle_change_size(self, dimension,w = None, h = None):
+      if dimension == "both":
+	self.rectangle_size[0] = w
+	self.rectangle_size[1] = h
+	self.rectangle_label.winfo_children()[0].config(text = "w: {}".format(w))
+	self.rectangle_label.winfo_children()[1].config(text = "h: {}".format(h))
+	
+      else:
+	if dimension == "w":
+	  w = tkSimpleDialog.askinteger("Width","Enter a number",parent = self.canvas)
+	  if w is None:
+	    return
+	
+	  self.rectangle_size[0] = w
+	  self.rectangle_label.winfo_children()[0].config(text = "w: {}".format(w))
+      
+	elif dimension == "h":
+	  h = tkSimpleDialog.askinteger("Height","Enter a number",parent = self.canvas)
+	  if h is None:
+	    return
+	  self.rectangle_size[1] = h
+	  self.rectangle_label.winfo_children()[1].config(text = "h: {}".format(h))
+      
+      
+	# reset all annotations for the new size
+	self.rectangle_frame_pairs = [0]*self.video_num_of_frames
+	# update the annotation label
+	self.frame_annot_label.winfo_children()[0].config(text="Annotated frames: {0:0{width}}/{1}".format(0, len(self.rectangle_frame_pairs), width=3))
+	
+      img_width = self.curr_photoimage.width()
+      img_height = self.curr_photoimage.height()
+      
+      # delete the rectangle
+      self.canvas.delete(self.polygon_id)
+      # create a new rectangle with the new width
+      self.create_token((img_width/2 + self.img_start_x, img_height/2 + self.img_start_y), "blue", self.rectangle_size)
+      
+      
+      
         
     def load_annotations_from_file(self,file_name):
       f = file(file_name, 'rb')
@@ -307,9 +360,9 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       self.video_num_of_frames = self.list_number_of_frames[self.video_index]
       
       self.rectangle_frame_pairs = [0]*self.video_num_of_frames
-      img_start_x = 100
-      img_start_y = 100
-      self.img_id = self.canvas.create_image(img_start_x, img_start_y, image = self.curr_photoimage, anchor="nw") #, anchor = NW
+      self.img_start_x = 100
+      self.img_start_y = 100
+      self.img_id = self.canvas.create_image(self.img_start_x, self.img_start_y, image = self.curr_photoimage, anchor="nw") #, anchor = NW
       
       
       # this data is used to keep track of an 
@@ -321,11 +374,16 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       
       # [changeable]
       # rectangle size in x and y
-      self.rectangle_size = [100, 50]
+      rec_h = 50
+      rec_w = 100
+      self.rectangle_size = [rec_w, rec_h]
+      self.rectangle_label.winfo_children()[0].config(text = "w: {}".format(rec_w))
+      self.rectangle_label.winfo_children()[1].config(text = "h: {}".format(rec_h))
+
       
       img_width = self.curr_photoimage.width()
       img_height = self.curr_photoimage.height()
-      self.create_token((img_width/2 + img_start_x, img_height/2 + img_start_y), "blue", self.rectangle_size) # in here tags="token" assigned 
+      self.create_token((img_width/2 + self.img_start_x, img_height/2 + self.img_start_y), "blue", self.rectangle_size) # in here tags="token" assigned 
       
       # add bindings for clicking, dragging and releasing over
       # any object with the "token" tag
@@ -559,12 +617,6 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	# check verbose
 	print "patches were saved congrats to you!!!"
 	
-  
-  
-     
- 
-   
-   
    
     def extract_patches_tf(self):
       # check if there is a frame folder loaded first
@@ -572,7 +624,6 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	tkMessageBox.showinfo(title = "Warning", message = "Load video frames directory first")
 	return
       
-      overlap = None
       overlap = tkSimpleDialog.askinteger("Overlap","Choose an overlap",parent = self.canvas)
       if overlap == None:
 	tkMessageBox.showinfo(title = "Error", message = "Overlap was not entered")
@@ -585,9 +636,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 
       self.image_segmentation((self.rectangle_size[1],self.rectangle_size[0]), overlap)
  
- 
-
-    
+      
     
     def save(self):
       # check if there is a frame folder loaded first
@@ -636,20 +685,30 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	self.canvas.itemconfig(self.polygon_id, outline = "red") 
       
       counter = 0
+      done = False
+      w = 0
+      h = 0
       for x in self.rectangle_frame_pairs:
 	if x is not 0:
 	  counter = counter + 1
+	  # get the width and the height of the rectangle from the annotations
+	  if done is False:
+	    done = True
+	    w = x[2] - x[0]
+	    h = x[3] - x[1]
+
+      self.rectangle_change_size("both", w , h)
       self.frame_annot_label.winfo_children()[0].config(text="Annotated frames: {0:0{width}}/{1}".format(counter, len(self.rectangle_frame_pairs), width=3))
-      
       tkMessageBox.showinfo(title = "Info", message = "Annotation model loaded")
        
     
-    def rightKey(self, event):
-      # change coordinates
-      # self.canvas.coords(self.polygon_id,100,100,500,100,500,500,100,500)
-      
+    def rightKey(self, event):      
       self.img_num +=1 
       if self.img_num >= self.video_num_of_frames:
+	
+	#delete rectangle
+	self.canvas.delete(self.polygon_id)
+	
 	save_annot = "no"
 	save_annot = tkMessageBox.askquestion("End of video frames", "Save annotations?", icon = "warning")
 	if save_annot == "yes":
@@ -676,6 +735,8 @@ class SampleApp(tk.Tk):  # inherit from Tk class
     def leftKey(self, event):
       self.img_num -=1 
       if self.img_num < 0: 
+	# delete rectangle
+	self.canvas.delete(self.polygon_id)
 	
 	self.video_index-=1
 	if self.video_index == -1:
@@ -708,6 +769,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	right_bottom_x = coords_relative[2]
 	right_bottom_y = coords_relative[3]
 	
+	# check if the rectangle is outside the image borders
 	if left_upper_x < 0 or left_upper_y <0 or right_bottom_x >= img_width or right_bottom_y >= img_height:
 	  tkMessageBox.showinfo(title = "Info", message = "Bad annotation, try again")
 	  return
@@ -734,6 +796,8 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	
 	# check if this is the last frame
 	if self.img_num >= self.video_num_of_frames:
+	  # delete polygon
+	  self.canvas.delete(self.polygon_id)
 	  save_annot = "no"
 	  save_annot = tkMessageBox.askquestion("End of video frames", "Save annotations?", icon = "warning")
 	  if save_annot == "yes":
