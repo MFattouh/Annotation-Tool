@@ -45,6 +45,37 @@ default is current directory
 8- Before saving the annotations I check for consistency of number of frames annotated with the number of frames of the video and I also check if there is already a saved model
 
 I attached the three scripts and you can try the program and give me a feedback (maybe the code in the main.py needs to be cleaned but I will do it later as I adjusted quite a few lines)
+ 											--------------------------------------------------
+															21/2/2017
+Done:
+
+* change frames/video_name/fps/xxx.png  ----> frames/video_name_fps_xxx.png
+
+* load frames automaticaly and remove button to select the frames directory
+
+* added video label to tell which video and how many videos and video name
+
+* remove quit button
+
+* add two buttons to extract masks as images or mat files + delete old masks if they don't exists in the new annootation
+
+* load frames of the video u chose first
+
+* added entry to choose number of overlaps in the segmentation button
+
+*check if the annotated frames is outside the borders of the image and give a message to the user to keep the annotation inside the image borders
+
+* option to change the size of rectangle (default: width = 100, height = 50)
+
+* if rectangle size changed its center is centered with the image
+
+* added size of the rectangle to patches and segmentation folders (e.g. patches_pos_wxh/video_name_fps_#_xxx.png) where w -> width, h -> height
+
+
+* don't save annotation model if user didn't annotate at least one frame
+
+* added argument -ff (frame folder path) if the user doesn't want to extract any frames
+
 
 ------------------------------------------
 Still to do:
