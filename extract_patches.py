@@ -80,6 +80,7 @@ def extract_patches_for_frames(frame_folder_name, annotations, save_folder):
       image = read_image_from_file(frame_folder_name, x+1)
       sliding_window(image, x+1, annotations[x], (50,100), save_folder, flag, 0)
       flag = 1   
+      
 def generate_patches_for_models():
   models_path = os.path.abspath("/home/deeplearning/Documents/paw_tracking_caffe/models/")
   for f in os.listdir(models_path):
