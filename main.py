@@ -51,15 +51,15 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	button3_window = self.canvas.create_window(100, 50, anchor="nw", window=button3)
 	
 	
-	button4 = tk.Button(self.canvas, text = "Extract rnd patches", command = self.extract_patches, anchor = "w")
-	button4.configure(width = 15)
+	button4 = tk.Button(self.canvas, text = "Extract patches (all frames)", command = self.extract_patches, anchor = "w")
+	button4.configure(width = 27)
 	button4.pack()
-	button4_window = self.canvas.create_window(300, 10, anchor="nw", window=button4)
+	button4_window = self.canvas.create_window(300, 50, anchor="nw", window=button4)
 
         button5 = tk.Button(self.canvas, text = "Segment patches for current frame", command = self.extract_patches_tf, anchor = "w")
         button5.configure(width = 27)
         button5.pack()
-        button5_window = self.canvas.create_window(500, 10, anchor="nw", window=button5)
+        button5_window = self.canvas.create_window(300, 10, anchor="nw", window=button5)
 
 	
 	
@@ -71,33 +71,33 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	# Video label window
 	self.video_info_label = tk.LabelFrame(self.canvas, text = "Video information", padx=5, pady=5)
 	self.video_info_label.pack()
-	self.canvas.create_window(800,140, anchor = "nw", window = self.video_info_label)
+	self.canvas.create_window(800,250, anchor = "nw", window = self.video_info_label)
 	tk.Label(self.video_info_label, text = "Video: No info").pack()
 	tk.Label(self.video_info_label, text = "Video: No info").pack()
 	
 	# Frame label window
 	self.frame_info_label = tk.LabelFrame(self.canvas, text="Frame information", padx=5, pady=5)
 	self.frame_info_label.pack()
-	self.canvas.create_window(800, 240, anchor="nw", window=self.frame_info_label)
+	self.canvas.create_window(800, 340, anchor="nw", window=self.frame_info_label)
 	tk.Label(self.frame_info_label, text="Frame: No info").pack()
 	tk.Label(self.frame_info_label, text="Frame: No info").pack()	
 	
 	# Annotation label window
 	self.frame_annot_label = tk.LabelFrame(self.canvas, text="Annotation information", padx=5, pady=5)
 	self.frame_annot_label.pack()
-	self.canvas.create_window(800, 340, anchor="nw", window=self.frame_annot_label)
+	self.canvas.create_window(800, 420, anchor="nw", window=self.frame_annot_label)
 	tk.Label(self.frame_annot_label, text="Annotated frames: No info").pack()
 	  
 	# Action label window
-	self.legend_label = tk.LabelFrame(self.canvas, text="Legend", padx=5, pady=5)
+	self.legend_label = tk.LabelFrame(self.canvas, text="Actions", padx=5, pady=5)
 	self.legend_label.pack()
-	self.canvas.create_window(800, 440, anchor="nw", window=self.legend_label)  
+	self.canvas.create_window(800, 490, anchor="nw", window=self.legend_label)  
 	tk.Label(self.legend_label, text = "<--  Left \n --> Right \n ReturnKey <--| Annotate \n BackSpace < Delete Annotation ").pack()
 	
 	# Mask window
 	self.mask_label = tk.LabelFrame(self.canvas, text = "Create mask as:", padx = 5, pady =5)
 	self.mask_label.pack()
-	self.canvas.create_window(800,10, anchor = "nw", window = self.mask_label)
+	self.canvas.create_window(580,5, anchor = "nw", window = self.mask_label)
 	button7 = tk.Button(self.mask_label, text = "Images", command = lambda: self.create_mask("image"), anchor = "w")
 	button7.configure(width= 5)
 	button7.pack(side = tk.LEFT)
@@ -106,18 +106,55 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	button8.pack(side = tk.LEFT)
 	
 	
-	# Rectangle size window
-	self.rectangle_label = tk.LabelFrame(self.canvas, text = "Rectangle size:", padx = 5, pady =5)
-	self.rectangle_label.pack()
-	self.canvas.create_window(1000,10,anchor = "nw", window = self.rectangle_label,width = 100)
-	button9 = tk.Button(self.rectangle_label, text = "w:",command = lambda: self.rectangle_change_size("w"))
-	button9.configure(width = 25)
-	button9.pack()
-	button10 = tk.Button(self.rectangle_label, text = "h:",command = lambda: self.rectangle_change_size("h"))
-	button10.configure(width = 25)
-	button10.pack()
-
-
+	# Annotation options window 
+	self.annotation_options_label = tk.LabelFrame(self.canvas, text = "Annotation:", padx = 5, pady =5)
+	self.canvas.create_window(800,10,anchor = "nw", window = self.annotation_options_label,width = 210,height = 230)
+	
+	radio_rectangle = tk.Radiobutton(self.annotation_options_label,text ="rectangle", value = 0).pack(side="left", anchor = "nw")
+	radio_circle = tk.Radiobutton(self.annotation_options_label,text ="circle", value = 1).pack(side="left", anchor = "ne", padx = 20)
+	
+	# rectangle frame
+	self.rectangle_frame = tk.LabelFrame(self.canvas, padx=5, pady=5)
+	self.canvas.create_window(810,55, anchor = "nw", window = self.rectangle_frame, width = 100, height = 180)
+	
+	# width frame
+	self.rec_width_frame = tk.LabelFrame(self.canvas, padx=5, pady=5)
+	self.canvas.create_window(820,60, anchor = "nw", window = self.rec_width_frame, width = 80, height = 80)
+	
+	# rectangle width button
+	button9 = tk.Button(self.rec_width_frame, text = "width",command = lambda: self.rectangle_change_size(w_flag = True, ask = True), width = 5)
+	button9.pack(side="top", anchor="nw")
+	
+	# rectangle width slider
+	self.slider_rec_w = tk.Scale(self.rec_width_frame, orient=tk.HORIZONTAL, length=70, sliderlength=10, from_=1, to=640, command= lambda _:self.rectangle_change_size(w_flag = True))
+	self.slider_rec_w.pack(side="left", anchor="nw")
+	
+	# rectangle height frame
+	self.rec_height_frame = tk.LabelFrame(self.canvas, padx=5, pady=5)
+	self.canvas.create_window(820,145, anchor = "nw", window = self.rec_height_frame, width = 80, height = 80)
+	
+	# rectangle heigth button
+	button10 = tk.Button(self.rec_height_frame, text = "height",command = lambda: self.rectangle_change_size(h_flag = True, ask = True),width = 5)
+	button10.pack(side="top", anchor = "n")
+	
+	# rectangle height slider
+	self.slider_rec_h = tk.Scale(self.rec_height_frame, orient=tk.VERTICAL, length=70, sliderlength=5, from_=1, to=480, command= lambda _:self.rectangle_change_size(h_flag = True))
+	self.slider_rec_h.pack(side="bottom", anchor="nw")
+	
+	# circle frame
+	self.circle_frame = tk.LabelFrame(self.canvas, padx=5, pady=5)
+	self.canvas.create_window(920,55, anchor = "nw", window = self.circle_frame, width = 80, height = 80)
+	
+	# circle radius button
+	button11 = tk.Button(self.circle_frame, text = "radius", width=5)
+	button11.pack(side="top",anchor="nw")
+	
+	# circle radius slider
+	self.slider_circle_r = tk.Scale(self.circle_frame, orient=tk.HORIZONTAL, length=70, sliderlength=10, from_=1, to=50)
+	self.slider_circle_r.pack(side= "bottom", anchor = "nw")
+	
+	
+	#------------------------------------------------------------------------------------------------------------------------------------------#
 	
 	# Folder settings
 	
@@ -198,45 +235,60 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         # load the first video frames
         self.img_num = 0
         self.load_frames(self.list_of_videos[self.video_index])
-        
-        
-    def rectangle_change_size(self, dimension,w = None, h = None):
-      if dimension == "both":
-	self.rectangle_size[0] = w
-	self.rectangle_size[1] = h
-	self.rectangle_label.winfo_children()[0].config(text = "w: {}".format(w))
-	self.rectangle_label.winfo_children()[1].config(text = "h: {}".format(h))
-	
-      else:
-	if dimension == "w":
-	  w = tkSimpleDialog.askinteger("Width","Enter a number",parent = self.canvas)
-	  if w is None:
-	    return
-	
-	  self.rectangle_size[0] = w
-	  self.rectangle_label.winfo_children()[0].config(text = "w: {}".format(w))
-      
-	elif dimension == "h":
-	  h = tkSimpleDialog.askinteger("Height","Enter a number",parent = self.canvas)
-	  if h is None:
-	    return
-	  self.rectangle_size[1] = h
-	  self.rectangle_label.winfo_children()[1].config(text = "h: {}".format(h))
-      
-      
-	# reset all annotations for the new size
-	self.rectangle_frame_pairs = [0]*self.video_num_of_frames
-	# update the annotation label
-	self.frame_annot_label.winfo_children()[0].config(text="Annotated frames: {0:0{width}}/{1}".format(0, len(self.rectangle_frame_pairs), width=3))
-	
+              
+    def rectangle_change_size(self, w_flag = False, h_flag = False, ask = False, w=0, h=0):
+      # get the relative coords of rectangle to the image
+      rec_coord = self.get_coord_rectangle()
+      rect_x_center = rec_coord[0] + self.rectangle_size[0]/2
+      rect_y_center = rec_coord[1] + self.rectangle_size[1]/2
+      width = None
+      height = None
       img_width = self.curr_photoimage.width()
       img_height = self.curr_photoimage.height()
+    
+      if w_flag == True:
+	# case user changed the width from the button
+	if ask == True:
+	  width = tkSimpleDialog.askinteger("Width","Enter a number",parent = self.canvas)
+	  if width is None:
+	    return
+	  
+	  if width >img_width:
+	    tkMessageBox.showinfo(title="Warning",message="Width shouldn't be greater that image width")
+	    return
+	else:
+	  width = self.slider_rec_w.get()
+	
+	if w is not 0:
+	  width = w
+	  
+	self.rectangle_size[0] = width
+	self.slider_rec_w.set(width)
+    
+      if h_flag == True:
+	if ask == True:
+	  height = tkSimpleDialog.askinteger("Height","Enter a number",parent = self.canvas)
+	  if height is None:
+	    return
+	  
+	  if height >img_height:
+	    tkMessageBox.showinfo(title="Warning",message="height shouldn't be greater that image height")
+	    return
+	else:
+	  height = self.slider_rec_h.get()
+	  
+	if h is not 0:
+	  height = h
+	  
+	self.rectangle_size[1] = height
+	self.slider_rec_h.set(height)
       
       # delete the rectangle
       self.canvas.delete(self.polygon_id)
-      # create a new rectangle with the new width
-      self.create_token((img_width/2 + self.img_start_x, img_height/2 + self.img_start_y), "blue", self.rectangle_size)
       
+      # create a new rectangle with the new width
+      self.create_token((rect_x_center + self.img_start_x, rect_y_center + self.img_start_y), "blue", self.rectangle_size)
+            
       
       
         
@@ -349,8 +401,9 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       rec_h = 50
       rec_w = 100
       self.rectangle_size = [rec_w, rec_h]
-      self.rectangle_label.winfo_children()[0].config(text = "w: {}".format(rec_w))
-      self.rectangle_label.winfo_children()[1].config(text = "h: {}".format(rec_h))
+      
+      self.slider_rec_w.set(rec_w)
+      self.slider_rec_h.set(rec_h)
 
       
       img_width = self.curr_photoimage.width()
@@ -697,7 +750,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	    w = x[2] - x[0]
 	    h = x[3] - x[1]
 
-      self.rectangle_change_size("both", w , h)
+      self.rectangle_change_size(w_flag = True,h_flag= True, w = w, h = h)
       if (self.rectangle_frame_pairs[self.img_num] is not 0):
 	self.change_rectangle()
 	self.canvas.itemconfig(self.polygon_id, outline = "red")
@@ -836,8 +889,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         self._drag_data["item"] = self.canvas.find_closest(event.x, event.y)[0]
         self._drag_data["x"] = event.x
         self._drag_data["y"] = event.y 
-      
-        
+    
         # put item to front
         self.canvas.tag_raise(self._drag_data["item"])
 
@@ -860,6 +912,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         # record the new position
         self._drag_data["x"] = event.x
         self._drag_data["y"] = event.y
+
 
 
 if __name__ == "__main__":
