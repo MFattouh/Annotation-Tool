@@ -236,6 +236,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         self.img_num = 0
         self.load_frames(self.list_of_videos[self.video_index])
               
+              
     def rectangle_change_size(self, w_flag = False, h_flag = False, ask = False, w=0, h=0):
       # get the relative coords of rectangle to the image
       rec_coord = self.get_coord_rectangle()
@@ -490,9 +491,16 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       
     def change_rectangle(self):
       rel_position = self.rectangle_frame_pairs[self.img_num]
-      curr_position = self.get_coord_rectangle()
-      #print (rel_position.left())
-      self.canvas.move(self.polygon_id, -curr_position[0]+rel_position[0], -curr_position[1]+rel_position[1])
+      
+      rect_x_center = rel_position[0] + self.rectangle_size[0]/2
+      rect_y_center = rel_position[1] + self.rectangle_size[1]/2
+      
+      # delete the rectangle
+      self.canvas.delete(self.polygon_id)
+      
+      # create a new rectangle with the new width
+      self.create_token((rect_x_center + self.img_start_x, rect_y_center + self.img_start_y), "red", self.rectangle_size)
+      
     
        
     def image_segmentation(self, window_size, overlap = 0):
@@ -738,18 +746,15 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       self.rectangle_frame_pairs[0:len(previous_frames)] = previous_frames  
       
       counter = 0
-      done = False
       w = 0
       h = 0
       for x in self.rectangle_frame_pairs:
 	if x is not 0:
 	  counter = counter + 1
-	  # get the width and the height of the rectangle from the annotations
-	  if done is False:
-	    done = True
-	    w = x[2] - x[0]
-	    h = x[3] - x[1]
-
+      
+      w = self.rectangle_frame_pairs[self.img_num][2] - self.rectangle_frame_pairs[self.img_num][0]
+      h = self.rectangle_frame_pairs[self.img_num][3] - self.rectangle_frame_pairs[self.img_num][1]
+      
       self.rectangle_change_size(w_flag = True,h_flag= True, w = w, h = h)
       if (self.rectangle_frame_pairs[self.img_num] is not 0):
 	self.change_rectangle()
@@ -782,6 +787,10 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       
 	# if rectangle exists redraw it
       if (self.rectangle_frame_pairs[self.img_num] is not 0):
+	width = self.rectangle_frame_pairs[self.img_num][2] - self.rectangle_frame_pairs[self.img_num][0] 
+	height = self.rectangle_frame_pairs[self.img_num][3] - self.rectangle_frame_pairs[self.img_num][1] 
+	self.rectangle_size[0] = width
+	self.rectangle_size[1] = height
 	self.change_rectangle() 
       self.change_image()
       #print self.img_num/float(20*3600)
@@ -806,6 +815,10 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	
 	# if rectangle exists redraw it
       if (self.rectangle_frame_pairs[self.img_num] is not 0):
+	width = self.rectangle_frame_pairs[self.img_num][2] - self.rectangle_frame_pairs[self.img_num][0] 
+	height = self.rectangle_frame_pairs[self.img_num][3] - self.rectangle_frame_pairs[self.img_num][1] 
+	self.rectangle_size[0] = width
+	self.rectangle_size[1] = height
 	self.change_rectangle() 
       self.change_image()
     
