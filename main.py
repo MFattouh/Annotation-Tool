@@ -224,7 +224,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         
         # check if a video file was passed to show its frames first
         video = None
-        if args.videos is not None and args.frames_folder is not None:
+        if args.videos is not None:
 	  video = get_video_file_name(args.videos)
 	  video = video + "_fps_" + str(args.fps)
         
@@ -235,29 +235,37 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         # load the first video frames
         self.img_num = 0
         self.load_frames(self.list_of_videos[self.video_index])
-              
-              
+      
+      
     def rectangle_change_size(self, w_flag = False, h_flag = False, ask = False, w=0, h=0):
+      
       # get the relative coords of rectangle to the image
       rec_coord = self.get_coord_rectangle()
       rect_x_center = rec_coord[0] + self.rectangle_size[0]/2
       rect_y_center = rec_coord[1] + self.rectangle_size[1]/2
+      
       width = None
       height = None
       img_width = self.curr_photoimage.width()
       img_height = self.curr_photoimage.height()
-    
+      
+      # flag to change the width
       if w_flag == True:
+	
 	# case user changed the width from the button
 	if ask == True:
 	  width = tkSimpleDialog.askinteger("Width","Enter a number",parent = self.canvas)
+	  
 	  if width is None:
 	    return
 	  
-	  if width >img_width:
-	    tkMessageBox.showinfo(title="Warning",message="Width shouldn't be greater that image width")
+	  # check if the user entered a large number
+	  if width >img_width or width < 1:
+	    tkMessageBox.showinfo(title="Warning",message="Width shouldn't be greater than image width or less than 1")
 	    return
+	
 	else:
+	  # get the width input from the user
 	  width = self.slider_rec_w.get()
 	
 	if w is not 0:
@@ -265,17 +273,24 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	  
 	self.rectangle_size[0] = width
 	self.slider_rec_w.set(width)
-    
+	
+      # flag to change the height
       if h_flag == True:
+	
+	# take height from the user
 	if ask == True:
 	  height = tkSimpleDialog.askinteger("Height","Enter a number",parent = self.canvas)
+	  
 	  if height is None:
 	    return
 	  
-	  if height >img_height:
-	    tkMessageBox.showinfo(title="Warning",message="height shouldn't be greater that image height")
+	  # check if the user enteered a large number
+	  if height >img_height or height < 1:
+	    tkMessageBox.showinfo(title="Warning",message="Height shouldn't be greater than image height or less than 1")
 	    return
+	
 	else:
+	  # get the height input from the user
 	  height = self.slider_rec_h.get()
 	  
 	if h is not 0:
@@ -284,15 +299,11 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	self.rectangle_size[1] = height
 	self.slider_rec_h.set(height)
       
-      # delete the rectangle
-      self.canvas.delete(self.polygon_id)
+      # change the coordinates of the polygon
+      self.create_token((rect_x_center + self.img_start_x, rect_y_center + self.img_start_y), "blue", self.rectangle_size, new = False)
       
-      # create a new rectangle with the new width
-      self.create_token((rect_x_center + self.img_start_x, rect_y_center + self.img_start_y), "blue", self.rectangle_size)
             
       
-      
-        
     def load_annotations_from_file(self,file_name):
       f = file(file_name, 'rb')
       frame_rectangle_pairs = cPickle.load(f)
@@ -321,7 +332,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	  tkMessageBox.showinfo(title = "Mask created", message = "saved as mat files")	
 
 		
-    def create_token(self, center_rectangle, color, rectangle_size):
+    def create_token(self, center_rectangle, color, rectangle_size, new = True):
         # Create a token at the given coordinate in the given color'''
         (x,y) = center_rectangle
         ####print "X", x
@@ -341,13 +352,16 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         # right bottom corner
         r_b_c_x = x + rectangle_size[0]/2
         r_b_c_y = y + rectangle_size[1]/2
-	self.polygon_id = self.canvas.create_polygon(l_u_c_x, l_u_c_y, 
-						     r_u_c_x, r_u_c_y, 
-						     r_b_c_x, r_b_c_y, 
-						     l_b_c_x, l_b_c_y, 
-						      outline=color, fill='', tags="token")
-    	
+        # create new polygon
+        if new == True:
+	  self.polygon_id = self.canvas.create_polygon(l_u_c_x, l_u_c_y, r_u_c_x, r_u_c_y, r_b_c_x, r_b_c_y, l_b_c_x, l_b_c_y, outline=color, fill='', tags="token")
 	
+	else:
+	  self.canvas.coords(self.polygon_id,l_u_c_x, l_u_c_y, r_u_c_x, r_u_c_y, r_b_c_x, r_b_c_y, l_b_c_x, l_b_c_y)
+	  
+    	
+    
+    
     def get_number_of_videos_and_frames(self):
       # list of different video names
       self.list_of_videos = []
@@ -410,6 +424,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       img_width = self.curr_photoimage.width()
       img_height = self.curr_photoimage.height()
       self.create_token((img_width/2 + self.img_start_x, img_height/2 + self.img_start_y), "blue", self.rectangle_size) # in here tags="token" assigned 
+
       
       # add bindings for clicking, dragging and releasing over
       # any object with the "token" tag
@@ -444,6 +459,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       model_annot_name = os.path.join(self.annot_save_folder, self.video_name + ".model")
       if os.path.exists(model_annot_name):
 	self.load()
+
 
     
   
@@ -489,18 +505,14 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       
       self.frame_annot_label.winfo_children()[0].config(text="Annotated frames: {0:0{width}}/{1}".format(counter, len(self.rectangle_frame_pairs), width=3))
       
-    def change_rectangle(self):
+    def move_rectangle(self):
       rel_position = self.rectangle_frame_pairs[self.img_num]
       
       rect_x_center = rel_position[0] + self.rectangle_size[0]/2
       rect_y_center = rel_position[1] + self.rectangle_size[1]/2
       
-      # delete the rectangle
-      self.canvas.delete(self.polygon_id)
-      
-      # create a new rectangle with the new width
-      self.create_token((rect_x_center + self.img_start_x, rect_y_center + self.img_start_y), "red", self.rectangle_size)
-      
+      curr_position = self.get_coord_rectangle()
+      self.canvas.move(self.polygon_id, -curr_position[0]+rel_position[0], -curr_position[1]+rel_position[1])
     
        
     def image_segmentation(self, window_size, overlap = 0):
@@ -731,36 +743,39 @@ class SampleApp(tk.Tk):  # inherit from Tk class
     
     
     def load(self):
-      if not self.frames_folder:
-	tkMessageBox.showinfo(title = "Warning", message = "Load video frames directory first")
-	return
-      
-      
+       #check if there is a model for the current video frames
       model_annot_name = os.path.join(self.annot_save_folder, self.video_name + ".model")
-      #check if there is a model for the loaded frames
       if not os.path.exists(model_annot_name):
 	tkMessageBox.showinfo(title = "Info", message = "No existing annotation model")
 	return
-           
+      
+      # get the rectangle coordinates for each frame of the loaded model
       previous_frames = self.load_annotations_from_file(model_annot_name)
       self.rectangle_frame_pairs[0:len(previous_frames)] = previous_frames  
       
       counter = 0
       w = 0
       h = 0
+      # get number of annootated frames
       for x in self.rectangle_frame_pairs:
 	if x is not 0:
 	  counter = counter + 1
       
-      w = self.rectangle_frame_pairs[self.img_num][2] - self.rectangle_frame_pairs[self.img_num][0]
-      h = self.rectangle_frame_pairs[self.img_num][3] - self.rectangle_frame_pairs[self.img_num][1]
-      
-      self.rectangle_change_size(w_flag = True,h_flag= True, w = w, h = h)
+      # check if the current frame is an annotated one
       if (self.rectangle_frame_pairs[self.img_num] is not 0):
-	self.change_rectangle()
+	
+	# get the width and the height of the rectangle of the current frame
+	w = self.rectangle_frame_pairs[self.img_num][2] - self.rectangle_frame_pairs[self.img_num][0]
+	h = self.rectangle_frame_pairs[self.img_num][3] - self.rectangle_frame_pairs[self.img_num][1]
+      
+	# change w and h of the rectangle and the slider
+	self.rectangle_change_size(w_flag = True,h_flag= True, w = w, h = h)
+	self.move_rectangle()
 	self.canvas.itemconfig(self.polygon_id, outline = "red")
+	
       self.frame_annot_label.winfo_children()[0].config(text="Annotated frames: {0:0{width}}/{1}".format(counter, len(self.rectangle_frame_pairs), width=3))
       tkMessageBox.showinfo(title = "Info", message = "Annotation model loaded")
+      
       
        
     
@@ -791,7 +806,8 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	height = self.rectangle_frame_pairs[self.img_num][3] - self.rectangle_frame_pairs[self.img_num][1] 
 	self.rectangle_size[0] = width
 	self.rectangle_size[1] = height
-	self.change_rectangle() 
+	self.rectangle_change_size(w_flag=True, h_flag=True, w=width, h=height)
+	self.move_rectangle() 
       self.change_image()
       #print self.img_num/float(20*3600)
       
@@ -819,7 +835,8 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	height = self.rectangle_frame_pairs[self.img_num][3] - self.rectangle_frame_pairs[self.img_num][1] 
 	self.rectangle_size[0] = width
 	self.rectangle_size[1] = height
-	self.change_rectangle() 
+	self.rectangle_change_size(w_flag=True, h_flag=True, w=width, h=height)
+	self.move_rectangle() 
       self.change_image()
     
     
@@ -883,6 +900,13 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	  # load frames of the next video
 	  self.load_frames(self.list_of_videos[self.video_index])
 	  
+	if (self.rectangle_frame_pairs[self.img_num] is not 0):
+	  width = self.rectangle_frame_pairs[self.img_num][2] - self.rectangle_frame_pairs[self.img_num][0] 
+	  height = self.rectangle_frame_pairs[self.img_num][3] - self.rectangle_frame_pairs[self.img_num][1] 
+	  self.rectangle_size[0] = width
+	  self.rectangle_size[1] = height
+	  self.rectangle_change_size(w_flag=True, h_flag=True, w=width, h=height)
+	  self.move_rectangle()  
 	self.change_image()
 	
 	
