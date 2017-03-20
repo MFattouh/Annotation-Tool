@@ -100,7 +100,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	#------------------------------------------------------------------------------------------------------------------------------------------#
 	# Annotation options window 
 	self.annotation_options_label = tk.LabelFrame(self.canvas, text = "Annotation:", padx = 5, pady =5)
-	self.canvas.create_window(800,10,anchor = "nw", window = self.annotation_options_label,width = 210,height = 280)
+	self.canvas.create_window(800,10,anchor = "nw", window = self.annotation_options_label,width = 260,height = 280)
 	
 	self.shape = tk.IntVar()
 	#set rectangle as default choice
@@ -153,23 +153,24 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	#------------------------------------------------------------------------------------------------------------------------------------------#
 	# Annotation labels frame
 	self.annotation_labels = tk.LabelFrame(self.canvas, text="Labels", padx=5, pady=5)
-	self.canvas.create_window(810,240, anchor="nw", window=self.annotation_labels, width=195, height=40)
+	self.canvas.create_window(810,240, anchor="nw", window=self.annotation_labels, width=240, height=40)
 	
 	self.label = tk.IntVar()
 	self.label.set(1)
 	self.label_number = self.label.get()
+	self.label_colors = ['black','red','green','yellow','magenta','cyan']
 	label_0 = tk.Radiobutton(self.annotation_labels,text ="0", 
-					 value = 0, variable=self.label, command=self.update_label).pack(side="left")
+					 value = 0, variable=self.label,fg=self.label_colors[0], command=self.update_label).pack(side="left")
 	label_1 = tk.Radiobutton(self.annotation_labels,text ="1", 
-					 value = 1, variable=self.label, command=self.update_label).pack(side="left")
+					 value = 1, variable=self.label, fg=self.label_colors[1], command=self.update_label).pack(side="left")
 	label_2 = tk.Radiobutton(self.annotation_labels,text ="2", 
-					 value = 2, variable=self.label, command=self.update_label).pack(side="left")
+					 value = 2, variable=self.label, fg=self.label_colors[2], command=self.update_label).pack(side="left")
 	label_3 = tk.Radiobutton(self.annotation_labels,text ="3", 
-					 value = 3, variable=self.label, command=self.update_label).pack(side="left")
+					 value = 3, variable=self.label, fg=self.label_colors[3], command=self.update_label).pack(side="left")
 	label_4 = tk.Radiobutton(self.annotation_labels,text ="4", 
-					 value = 4, variable=self.label, command=self.update_label).pack(side="left")
+					 value = 4, variable=self.label, fg=self.label_colors[4], command=self.update_label).pack(side="left")
 	label_5 = tk.Radiobutton(self.annotation_labels,text ="5", 
-					 value = 5, variable=self.label, command=self.update_label).pack(side="left")
+					 value = 5, variable=self.label, fg=self.label_colors[5], command=self.update_label).pack(side="left")
 	
 	#------------------------------------------------------------------------------------------------------------------------------------------#
 	# Folder settings
@@ -307,7 +308,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	    self.rectangle_size[1] = height
 	    self.rectangle_change_size(w_flag=True, h_flag=True, w=width, h=height)
 	    self.move_rectangle(label_index)
-	    self.canvas.itemconfig(self.polygon_id, outline = "red")
+	    self.canvas.itemconfig(self.polygon_id, outline = self.label_colors[self.label_number])
       else:
 	self.canvas.itemconfig(self.polygon_id, outline = "blue")
 	
@@ -565,7 +566,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	if label_index == -1:
 	  self.canvas.itemconfig(self.polygon_id, outline = "blue")
 	else:
-	  self.canvas.itemconfig(self.polygon_id, outline = "red") 
+	  self.canvas.itemconfig(self.polygon_id, outline = self.label_colors[self.label_number]) 
       
        # get number of annootated frames
       number_of_annotaded_frames = sum([int(i !=0) for i in self.rectangle_frame_pairs])
@@ -893,85 +894,89 @@ class SampleApp(tk.Tk):  # inherit from Tk class
   
   
     def returnKey(self, event):
-        #save rectangle position
-        img_width = self.curr_photoimage.width()
-	img_height = self.curr_photoimage.height()
+      # check if the label is not 0
+      if self.label_number == 0:
+	tkMessageBox.showinfo(title="Warning",message="Can not annotate while label is 0")
+	return
+      
+      img_width = self.curr_photoimage.width()
+      img_height = self.curr_photoimage.height()
+      #save rectangle position
+      coords_relative = self.get_coord_rectangle()
+      # add the label number at the end of the coords
+      coords_relative.append(self.label_number)
+      #check if there was bad annotations
+      # rectangle is defined by left top corner and right bottom corner
+      left_upper_x = coords_relative[0]
+      left_upper_y = coords_relative[1]
+      right_bottom_x = coords_relative[2]
+      right_bottom_y = coords_relative[3]
+      
+      # check if the rectangle is outside the image borders
+      if left_upper_x < 0 or left_upper_y <0 or right_bottom_x >= img_width or right_bottom_y >= img_height:
+	tkMessageBox.showinfo(title = "Info", message = "Bad annotation, try again")
+	return
+      
+      # if first time to annotate this frame
+      if self.rectangle_frame_pairs[self.img_num] is 0:
+	self.rectangle_frame_pairs[self.img_num] = []
+	self.rectangle_frame_pairs[self.img_num].append(coords_relative)
 	
-	coords_relative = self.get_coord_rectangle()
-	# add the label number at the end of the coords
-	coords_relative.append(self.label_number)
-	#check if there was bad annotations
-	# rectangle is defined by left top corner and right bottom corner
-	left_upper_x = coords_relative[0]
-	left_upper_y = coords_relative[1]
-	right_bottom_x = coords_relative[2]
-	right_bottom_y = coords_relative[3]
+      # else check for previous annotations
+      else:
+	label_index = self.get_label_index_in_list()
 	
-	# check if the rectangle is outside the image borders
-	if left_upper_x < 0 or left_upper_y <0 or right_bottom_x >= img_width or right_bottom_y >= img_height:
-	  tkMessageBox.showinfo(title = "Info", message = "Bad annotation, try again")
-	  return
-	
-	# if first time to annotate this frame
-	if self.rectangle_frame_pairs[self.img_num] is 0:
-	  self.rectangle_frame_pairs[self.img_num] = []
+	if label_index != -1:
+	  self.rectangle_frame_pairs[self.img_num][label_index] = coords_relative
+	else:
 	  self.rectangle_frame_pairs[self.img_num].append(coords_relative)
 	  
-	# else check for previous annotations
-	else:
-	  label_index = self.get_label_index_in_list()
-	  
-	  if label_index != -1:
-	    self.rectangle_frame_pairs[self.img_num][label_index] = coords_relative
-	  else:
-	    self.rectangle_frame_pairs[self.img_num].append(coords_relative)
-	    
-	  
-	print self.rectangle_frame_pairs
 	
-	if (self.flag == 0):  
-	  #proveri uste ednas koordinatite
-	  self.tracker.start_track(self.curr_image_raw, dlib.rectangle(coords_relative[0],coords_relative[1],coords_relative[2],coords_relative[3]))
-	  #self.tracker.start_track(self.images_raw[0], dlib.rectangle(170, 200, 240, 240))
-	  self.flag = 1 
-	  
-        else:
-	  #update filter
-	  self.tracker.update(self.curr_image_raw, dlib.rectangle(coords_relative[0],coords_relative[1],coords_relative[2],coords_relative[3]))
-	  
-	  # update rectangle (overlay it)
-	  rel_position = self.tracker.get_position()
-	  curr_position = self.get_coord_rectangle()
-	
-	  self.canvas.move(self.polygon_id, -curr_position[0]+rel_position.left(), -curr_position[1]+rel_position.top())
+      print self.rectangle_frame_pairs
       
-	self.img_num += 1
+      if (self.flag == 0):  
+	#proveri uste ednas koordinatite
+	self.tracker.start_track(self.curr_image_raw, dlib.rectangle(coords_relative[0],coords_relative[1],coords_relative[2],coords_relative[3]))
+	#self.tracker.start_track(self.images_raw[0], dlib.rectangle(170, 200, 240, 240))
+	self.flag = 1 
 	
-	# check if this is the last frame
-	if self.img_num >= self.video_num_of_frames:
-	  # delete polygon
-	  self.canvas.delete(self.polygon_id)
-	  save_annot = "no"
-	  save_annot = tkMessageBox.askquestion("End of video frames", "Save annotations?", icon = "warning")
-	  if save_annot == "yes":
-	    self.save()
-	  else:
-	    tkMessageBox.showinfo(title = "Info", message = "Annotation model not saved")
-	  self.img_num = 0
-	  self.video_index+=1
-	  # check if the current video is the last video
-	  if self.video_index == self.total_num_of_videos:
-	    self.video_index = 0
-	    
-	  # load frames of the next video
-	  self.load_frames(self.list_of_videos[self.video_index])
+      else:
+	#update filter
+	self.tracker.update(self.curr_image_raw, dlib.rectangle(coords_relative[0],coords_relative[1],coords_relative[2],coords_relative[3]))
+	
+	# update rectangle (overlay it)
+	rel_position = self.tracker.get_position()
+	curr_position = self.get_coord_rectangle()
+      
+	self.canvas.move(self.polygon_id, -curr_position[0]+rel_position.left(), -curr_position[1]+rel_position.top())
+    
+      self.img_num += 1
+      
+      # check if this is the last frame
+      if self.img_num >= self.video_num_of_frames:
+	# delete polygon
+	self.canvas.delete(self.polygon_id)
+	save_annot = "no"
+	save_annot = tkMessageBox.askquestion("End of video frames", "Save annotations?", icon = "warning")
+	if save_annot == "yes":
+	  self.save()
+	else:
+	  tkMessageBox.showinfo(title = "Info", message = "Annotation model not saved")
+	self.img_num = 0
+	self.video_index+=1
+	# check if the current video is the last video
+	if self.video_index == self.total_num_of_videos:
+	  self.video_index = 0
 	  
-	# update according to the label number selected
-	if self.rectangle_frame_pairs[self.img_num] is not 0:
-	  label_index = self.get_label_index_in_list()
-	  self.update_image_annotated_with_label(label_index) 
-	self.change_image()
+	# load frames of the next video
+	self.load_frames(self.list_of_videos[self.video_index])
 	
+      # update according to the label number selected
+      if self.rectangle_frame_pairs[self.img_num] is not 0:
+	label_index = self.get_label_index_in_list()
+	self.update_image_annotated_with_label(label_index) 
+      self.change_image()
+      
 	
     def backspaceKey(self, event):
       label_index = self.get_label_index_in_list()
