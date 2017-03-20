@@ -15,6 +15,7 @@ from extract_frames import extract_frames_from_videos # frame extraction functio
 from extract_frames import get_video_file_name
 import argparse # for the arguments passed 
 from compute_masks import create_masks_for_model # for creating the mask 
+import time
 
 
 class SampleApp(tk.Tk):  # inherit from Tk class 
@@ -159,6 +160,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	self.label.set(1)
 	self.label_number = self.label.get()
 	self.label_colors = ['black','red','green','yellow','magenta','cyan']
+	self.num_labels = 5
 	label_0 = tk.Radiobutton(self.annotation_labels,text ="0", 
 					 value = 0, variable=self.label,fg=self.label_colors[0], command=self.update_label).pack(side="left")
 	label_1 = tk.Radiobutton(self.annotation_labels,text ="1", 
@@ -271,34 +273,37 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       pass
       #self.polygon_id = self.canvas.create_oval(200, 300, 250, 340,outline='blue',fill='',tags="token")
     		
-    def create_rectangle(self, center_rectangle, color, rectangle_size, new = True):
-        # Create a token at the given coordinate in the given color'''
-        (x,y) = center_rectangle
-        ####print "X", x
-        ####print "Y", y
-        # left upper corner
-        l_u_c_x = x - rectangle_size[0]/2
-        l_u_c_y = y - rectangle_size[1]/2
-         
-        # left bottom corner
-        l_b_c_x =  x - rectangle_size[0]/2
-        l_b_c_y =  y + rectangle_size[1]/2
-        
-        # right upper corner
-        r_u_c_x =  x + rectangle_size[0]/2
-        r_u_c_y = y - rectangle_size[1]/2
-        
-        # right bottom corner
-        r_b_c_x = x + rectangle_size[0]/2
-        r_b_c_y = y + rectangle_size[1]/2
-        # create new polygon
-        if new == True:
-	  self.polygon_id = self.canvas.create_polygon(l_u_c_x, l_u_c_y, r_u_c_x, r_u_c_y, r_b_c_x, r_b_c_y, l_b_c_x, l_b_c_y, outline=color, fill='', tags="token")
-	  
-	#change coords
-	else:
-	  self.canvas.coords(self.polygon_id,l_u_c_x, l_u_c_y, r_u_c_x, r_u_c_y, r_b_c_x, r_b_c_y, l_b_c_x, l_b_c_y)
-	  
+    def create_rectangle(self, center_rectangle, color, rectangle_size, new = True, tags_flag = True, index = 0):
+      # Create a token at the given coordinate in the given color'''
+      (x,y) = center_rectangle
+      ####print "X", x
+      ####print "Y", y
+      # left upper corner
+      l_u_c_x = x - rectangle_size[0]/2
+      l_u_c_y = y - rectangle_size[1]/2
+	
+      # left bottom corner
+      l_b_c_x =  x - rectangle_size[0]/2
+      l_b_c_y =  y + rectangle_size[1]/2
+      
+      # right upper corner
+      r_u_c_x =  x + rectangle_size[0]/2
+      r_u_c_y = y - rectangle_size[1]/2
+      
+      # right bottom corner
+      r_b_c_x = x + rectangle_size[0]/2
+      r_b_c_y = y + rectangle_size[1]/2
+      # create new polygon
+      if new == True:
+	if tags_flag == True:
+	  self.polygon_id[index] = self.canvas.create_polygon(l_u_c_x, l_u_c_y, r_u_c_x, r_u_c_y, r_b_c_x, r_b_c_y, l_b_c_x, l_b_c_y, outline=color, fill='', tags="token")
+	if tags_flag == False:
+	  self.polygon_id[index] = self.canvas.create_polygon(l_u_c_x, l_u_c_y, r_u_c_x, r_u_c_y, r_b_c_x, r_b_c_y, l_b_c_x, l_b_c_y, outline=color, fill='')
+	
+      #change coords
+      else:
+	self.canvas.coords(self.polygon_id[index],l_u_c_x, l_u_c_y, r_u_c_x, r_u_c_y, r_b_c_x, r_b_c_y, l_b_c_x, l_b_c_y)
+	
     def update_image_annotated_with_label(self,label_index):
       if label_index != -1:
 	    print "label {} exists".format(self.label_number)
@@ -308,17 +313,55 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	    self.rectangle_size[1] = height
 	    self.rectangle_change_size(w_flag=True, h_flag=True, w=width, h=height)
 	    self.move_rectangle(label_index)
-	    self.canvas.itemconfig(self.polygon_id, outline = self.label_colors[self.label_number])
+	    self.canvas.itemconfig(self.polygon_id[0], outline = self.label_colors[self.label_number])
       else:
-	self.canvas.itemconfig(self.polygon_id, outline = "blue")
+	self.canvas.itemconfig(self.polygon_id[0], outline = "blue")
 	
+	
+    def all_annotations_mode(self):
+      print "Get all annotations mode"
+      # delete rectangle(s)
+      for i in range(0, self.num_labels):
+	self.canvas.delete(self.polygon_id[i])
+      # check if this image is annotate
+      if (self.rectangle_frame_pairs[self.img_num] is not 0):
+	# get number of labels for this image
+	size_labels = len(self.rectangle_frame_pairs[self.img_num])
+	print "Number of labels for this image", size_labels
+	# go through the labels for this image and make annotations for all of them
+	for i in range(0, size_labels):
+	  label = self.rectangle_frame_pairs[self.img_num][i][-1]
+	  print self.rectangle_frame_pairs[self.img_num][i][-1]
+	  print "color", self.label_colors[label]
+	  rec_width = self.rectangle_frame_pairs[self.img_num][i][2] - self.rectangle_frame_pairs[self.img_num][i][0]
+	  rec_height = self.rectangle_frame_pairs[self.img_num][i][3] - self.rectangle_frame_pairs[self.img_num][i][1]
+	  rec_x_center = self.rectangle_frame_pairs[self.img_num][i][0] + rec_width/2 + self.img_start_x
+	  rec_y_center = self.rectangle_frame_pairs[self.img_num][i][1] + rec_height/2 + self.img_start_y
+	  self.create_rectangle((rec_x_center,rec_y_center),self.label_colors[label], [rec_width,rec_height] ,tags_flag=False, index = label-1)
+	      
     def update_label(self):
       self.label_number = self.label.get()
       # check if this image is annotated with this label before
-      if (self.rectangle_frame_pairs[self.img_num] is not 0):
-	label_index = self.get_label_index_in_list()
-	self.update_image_annotated_with_label(label_index)
-    
+      if self.label_number == 0:
+	self.all_annotations_mode()
+      
+      else:
+	# delete rectangle(s)
+	for i in range(0, self.num_labels):
+	  self.canvas.delete(self.polygon_id[i])
+	  
+	# create new rectangle (default)
+	img_width = self.curr_photoimage.width()
+	img_height = self.curr_photoimage.height()	
+	self.create_rectangle((img_width/2 + self.img_start_x, img_height/2 + self.img_start_y), "blue", self.rectangle_size) 
+	
+	# if this image is annotated
+	if (self.rectangle_frame_pairs[self.img_num] is not 0):  
+	  # check the annotation with the label selected
+	  label_index = self.get_label_index_in_list()
+	  # update image with the annotation of the label
+	  self.update_image_annotated_with_label(label_index)
+      
     def get_shape(self):
       shape = self.shape.get()
       img_width = self.curr_photoimage.width()
@@ -478,7 +521,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       self._drag_data = {"x": 0, "y": 0, "item": None}
       
       # create a couple movable objects
-      self.polygon_id = 0
+      self.polygon_id = [0]*self.num_labels
       
       # rectangle size in x and y (default)
       rec_h = 50
@@ -543,7 +586,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
     
     def get_coord_rectangle(self):
       ''' Get coordinates of rectangle relative to image '''
-      coords_rectangle = self.canvas.coords(self.polygon_id)
+      coords_rectangle = self.canvas.coords(self.polygon_id[0])
       coords_rectangle = [long(c) for c in coords_rectangle]
       coords_image = self.canvas.coords(self.img_id) 
       coords_image = [long(c) for c in coords_image]
@@ -560,13 +603,13 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       
       
       if (self.rectangle_frame_pairs[self.img_num] == 0):
-	self.canvas.itemconfig(self.polygon_id, outline = "blue")
+	self.canvas.itemconfig(self.polygon_id[0], outline = "blue")
       else:
 	label_index = self.get_label_index_in_list()
 	if label_index == -1:
-	  self.canvas.itemconfig(self.polygon_id, outline = "blue")
+	  self.canvas.itemconfig(self.polygon_id[0], outline = "blue")
 	else:
-	  self.canvas.itemconfig(self.polygon_id, outline = self.label_colors[self.label_number]) 
+	  self.canvas.itemconfig(self.polygon_id[0], outline = self.label_colors[self.label_number]) 
       
        # get number of annootated frames
       number_of_annotaded_frames = sum([int(i !=0) for i in self.rectangle_frame_pairs])
@@ -580,7 +623,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       rect_y_center = rel_position[1] + self.rectangle_size[1]/2
       
       curr_position = self.get_coord_rectangle()
-      self.canvas.move(self.polygon_id, -curr_position[0]+rel_position[0], -curr_position[1]+rel_position[1])
+      self.canvas.move(self.polygon_id[0], -curr_position[0]+rel_position[0], -curr_position[1]+rel_position[1])
     
        
     def image_segmentation(self, window_size, overlap = 0):
@@ -836,7 +879,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       if self.img_num >= self.video_num_of_frames:
 	
 	#delete rectangle
-	self.canvas.delete(self.polygon_id)
+	self.canvas.delete(self.polygon_id[0])
 	
 	save_annot = "no"
 	save_annot = tkMessageBox.askquestion("End of video frames", "Save annotations?", icon = "warning")
@@ -852,18 +895,23 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	self.img_num = 0
 	self.load_frames(self.list_of_videos[self.video_index])
       
+      self.change_image()
+      # check if label 0 is chosen
+      if self.label_number == 0:
+	self.all_annotations_mode()
+      
       # check if this image is annotated
-      if (self.rectangle_frame_pairs[self.img_num] is not 0):
+      elif (self.rectangle_frame_pairs[self.img_num] is not 0):
 	label_index = self.get_label_index_in_list()
 	self.update_image_annotated_with_label(label_index)
-      self.change_image()
+      
           
     
     def leftKey(self, event):
       self.img_num -=1 
       if self.img_num < 0: 
 	# delete rectangle
-	self.canvas.delete(self.polygon_id)
+	self.canvas.delete(self.polygon_id[0])
 	
 	self.video_index-=1
 	if self.video_index == -1:
@@ -871,12 +919,17 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	
 	self.img_num = self.list_number_of_frames[self.video_index] - 1
 	self.load_frames(self.list_of_videos[self.video_index])
-        
+	
+      self.change_image()
+      # check if label 0 is chosen
+      if self.label_number == 0:
+	self.all_annotations_mode()
+      
       # check if this image is annotated
-      if (self.rectangle_frame_pairs[self.img_num] is not 0):
+      elif (self.rectangle_frame_pairs[self.img_num] is not 0):
 	label_index = self.get_label_index_in_list()
 	self.update_image_annotated_with_label(label_index)
-      self.change_image()
+      
   
   
     def get_label_index_in_list(self):
@@ -888,7 +941,6 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	if self.label_number == self.rectangle_frame_pairs[self.img_num][i][-1]:
 	  label_exists = True
 	  return i
-	
       return -1
   
   
@@ -930,10 +982,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	  self.rectangle_frame_pairs[self.img_num][label_index] = coords_relative
 	else:
 	  self.rectangle_frame_pairs[self.img_num].append(coords_relative)
-	  
-	
-      print self.rectangle_frame_pairs
-      
+	        
       if (self.flag == 0):  
 	#proveri uste ednas koordinatite
 	self.tracker.start_track(self.curr_image_raw, dlib.rectangle(coords_relative[0],coords_relative[1],coords_relative[2],coords_relative[3]))
@@ -948,14 +997,14 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	rel_position = self.tracker.get_position()
 	curr_position = self.get_coord_rectangle()
       
-	self.canvas.move(self.polygon_id, -curr_position[0]+rel_position.left(), -curr_position[1]+rel_position.top())
+	self.canvas.move(self.polygon_id[0], -curr_position[0]+rel_position.left(), -curr_position[1]+rel_position.top())
     
       self.img_num += 1
       
       # check if this is the last frame
       if self.img_num >= self.video_num_of_frames:
 	# delete polygon
-	self.canvas.delete(self.polygon_id)
+	self.canvas.delete(self.polygon_id[0])
 	save_annot = "no"
 	save_annot = tkMessageBox.askquestion("End of video frames", "Save annotations?", icon = "warning")
 	if save_annot == "yes":
@@ -971,22 +1020,30 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	# load frames of the next video
 	self.load_frames(self.list_of_videos[self.video_index])
 	
+      self.change_image()
       # update according to the label number selected
       if self.rectangle_frame_pairs[self.img_num] is not 0:
 	label_index = self.get_label_index_in_list()
 	self.update_image_annotated_with_label(label_index) 
-      self.change_image()
+      
       
 	
     def backspaceKey(self, event):
-      label_index = self.get_label_index_in_list()
-      if label_index != -1:
-	del self.rectangle_frame_pairs[self.img_num][label_index]
-	if len(self.rectangle_frame_pairs[self.img_num]) == 0:
-	  self.rectangle_frame_pairs[self.img_num] = 0
-	self.canvas.itemconfig(self.polygon_id, outline = "blue")
-      
-       # get number of annootated frames
+      # delete all annotations for all the labels if label is 0
+      if self.label_number == 0:
+	self.rectangle_frame_pairs[self.img_num] = 0
+	for i in range(0, self.num_labels):
+	  self.canvas.delete(self.polygon_id[i])
+
+      else:
+	label_index = self.get_label_index_in_list()
+	if label_index != -1:
+	  del self.rectangle_frame_pairs[self.img_num][label_index]
+	  if len(self.rectangle_frame_pairs[self.img_num]) == 0:
+	    self.rectangle_frame_pairs[self.img_num] = 0
+	  self.canvas.itemconfig(self.polygon_id[0], outline = "blue")
+	
+	# get number of annootated frames
       number_of_annotaded_frames = sum([int(i !=0) for i in self.rectangle_frame_pairs])
       self.frame_annot_label.winfo_children()[0].config(text="Annotated frames: {0:0{width}}/{1}".format(number_of_annotaded_frames, len(self.rectangle_frame_pairs), width=3))
 
