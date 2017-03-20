@@ -28,7 +28,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	###### GUI #####
 	self.title("Data annotation")
         # create a canvas
-        self.canvas = tk.Canvas(width=1200, height=640) 
+        self.canvas = tk.Canvas(width=1400, height=640) 
         self.canvas.pack(fill="both", expand=True)	
      
         self.menubar = tk.Menu(self)   
@@ -175,6 +175,59 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 					 value = 5, variable=self.label, fg=self.label_colors[5], command=self.update_label).pack(side="left")
 	
 	#------------------------------------------------------------------------------------------------------------------------------------------#
+	# HDF5 frame
+	self.hd5f_frame = tk.LabelFrame(self.canvas, text="HDF5", padx=5, pady=5)
+	self.canvas.create_window(1100,10, anchor="nw", window=self.hd5f_frame, width=200, height=170)
+	
+	# Augmentation frame
+	self.augmentation_frame = tk.LabelFrame(self.canvas, text="Augmentation")
+	self.canvas.create_window(1110, 28, anchor="nw", window=self.augmentation_frame, width=180, height=100)
+	
+	# aumentation options label
+	augmentation_options_label = tk.Label(self.augmentation_frame, text="Options")
+	augmentation_options_label.place(x=5)
+	
+	# check boxes
+	self.rotation = tk.IntVar()
+	check_box_1 = tk.Checkbutton(self.augmentation_frame,text="rotation", variable=self.rotation, command=self.check_augmentation_boxes)
+	check_box_1.place(x=0,y=20)
+	
+	self.color = tk.IntVar()
+	check_box_2 = tk.Checkbutton(self.augmentation_frame,text="color", variable=self.color, command=self.check_augmentation_boxes)
+	check_box_2.place(x=0,y=40)
+	
+	self.scale = tk.IntVar()
+	check_box_3 = tk.Checkbutton(self.augmentation_frame,text="scale", variable=self.scale, command=self.check_augmentation_boxes)
+	check_box_3.place(x=0, y=60)
+	
+	# Random number label
+	random_number_label = tk.Label(self.augmentation_frame, text="# Random")
+	random_number_label.place(x=100)
+	
+	
+	# Rotation entry
+	self.rotation_rand_num = tk.StringVar()
+	self.rotation_entry = tk.Entry(self.augmentation_frame, width=5, textvariable=self.rotation_rand_num, state='disabled')
+	self.rotation_entry.place(x=100, y=20)
+	
+	# Color entry
+	self.color_rand_num = tk.StringVar()
+	self.color_entry = tk.Entry(self.augmentation_frame, width=5, textvariable=self.color_rand_num, state='disabled')
+	self.color_entry.place(x=100, y=40)
+	
+	# Scale entry
+	self.scale_rand_num = tk.StringVar()
+	self.scale_entry = tk.Entry(self.augmentation_frame, width=5, textvariable=self.scale_rand_num, state='disabled')
+	self.scale_entry.place(x=100, y=60)
+	
+	
+	# export hdf5 button
+	hdf5_export_btn = tk.Button(self.hd5f_frame, text="HDF5 export", command=self.hdf5_export, padx=5, pady=5)
+	hdf5_export_btn.pack(side="bottom")
+	
+	
+	
+	#------------------------------------------------------------------------------------------------------------------------------------------#
 	# Folder settings
 	
 	# main folder
@@ -254,8 +307,38 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         self.img_num = 0
         self.load_frames(self.list_of_videos[self.video_index])
  
- 
- 
+    def hdf5_export(self):
+      if self.rotation_rand_num.get() != "":
+	# check if it is a positive int digit
+	if self.rotation_rand_num.get().isdigit():
+	  print "Rotation random number", self.rotation_rand_num.get()
+	  
+      if self.color_rand_num.get() != "":
+	# check if it is a positive int digit
+	if self.color_rand_num.get().isdigit():
+	  print "Color random number", self.color_rand_num.get()
+	  
+      if self.scale_rand_num.get() != "":
+	# check if it is a positive int digit
+	if self.scale_rand_num.get().isdigit():
+	  print "Scale random number", self.scale_rand_num.get()
+      
+    def check_augmentation_boxes(self):
+      if self.rotation.get():
+	self.rotation_entry.config(state='normal')
+      else:
+	self.rotation_entry.config(state='disabled')
+      
+      if self.color.get():
+	self.color_entry.config(state='normal')
+      else:
+	self.color_entry.config(state='disabled')
+	
+      if self.scale.get():
+	self.scale_entry.config(state='normal')
+      else:
+	self.scale_entry.config(state='disabled')
+      
     def quit(self):
       exit(1)
     
@@ -306,7 +389,6 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	
     def update_image_annotated_with_label(self,label_index):
       if label_index != -1:
-	    print "label {} exists".format(self.label_number)
 	    width = self.rectangle_frame_pairs[self.img_num][label_index][2] - self.rectangle_frame_pairs[self.img_num][label_index][0] 
 	    height = self.rectangle_frame_pairs[self.img_num][label_index][3] - self.rectangle_frame_pairs[self.img_num][label_index][1] 
 	    self.rectangle_size[0] = width
@@ -353,7 +435,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	# create new rectangle (default)
 	img_width = self.curr_photoimage.width()
 	img_height = self.curr_photoimage.height()	
-	self.create_rectangle((img_width/2 + self.img_start_x, img_height/2 + self.img_start_y), "blue", self.rectangle_size) 
+	self.create_rectangle((img_width/2 + self.img_start_x, img_height/2 + self.img_start_y), "blue", [100,50]) 
 	
 	# if this image is annotated
 	if (self.rectangle_frame_pairs[self.img_num] is not 0):  
