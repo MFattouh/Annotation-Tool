@@ -5,7 +5,6 @@ import tkSimpleDialog # pop up window with entry
 import os	      	# system calls
 from PIL import ImageTk, Image # images in GUI and image processing 
 import dlib	      	# correlational tracker
-#from skimage import io 	# image read and conversion to array 
 import glob		# some linux command functions
 import numpy as np	# matlab python stuff
 import cPickle		# saving rectangle pairs (list i/o)
@@ -30,16 +29,23 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         # create a canvas
         self.canvas = tk.Canvas(width=1200, height=640) 
         self.canvas.pack(fill="both", expand=True)	
+     
+        self.menubar = tk.Menu(self)   
+        # file menu bar
+        filemenu = tk.Menu(self.menubar, tearoff=0)
+        self.menubar.add_cascade(label="File", menu=filemenu)
+        filemenu.add_command(label="Exit", command=self.quit)
+        
+	# help menu bar
+	self.show_actions_flag = tk.IntVar()
+	
+        helpmenu = tk.Menu(self.menubar, tearoff=0)
+        self.menubar.add_cascade(label="Help", menu=helpmenu)
+        helpmenu.add_checkbutton(label="Actions", variable=self.show_actions_flag, command=self.show_actions)
+        
+        self.config(menu=self.menubar)
         
 	'''create buttons section'''
-	# add quit button
-        #button1 = tk.Button(self.canvas, text = "Quit", command = self.quit,
-                                                            #anchor = "w")
-        #button1.configure(width = 10)
-        #button1.pack()
-        #button1_window = self.canvas.create_window(10, 10, anchor="nw", window=button1)
-	
-	# check if inbetween save and load the space is same
 	button2 = tk.Button(self.canvas, text = "Load annotations", command = self.load, anchor = "w")
 	button2.configure(width = 15)
 	button2.pack()
@@ -50,7 +56,6 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	button3.pack()
 	button3_window = self.canvas.create_window(100, 50, anchor="nw", window=button3)
 	
-	
 	button4 = tk.Button(self.canvas, text = "Extract patches (all frames)", command = self.extract_patches, anchor = "w")
 	button4.configure(width = 27)
 	button4.pack()
@@ -60,39 +65,26 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         button5.configure(width = 27)
         button5.pack()
         button5_window = self.canvas.create_window(300, 10, anchor="nw", window=button5)
-
-	
-	
-	#button5 = tk.Button(self.canvas, text = "Extract all patches", command = extract_patches.generate_patches_for_models((200,200)), anchor = "w")
-	#button5.configure(width = 15)
-	#button5.pack()
-	#button5_window = self.canvas.create_window(530, 50, anchor="nw", window=button5)
 	
 	# Video label window
 	self.video_info_label = tk.LabelFrame(self.canvas, text = "Video information", padx=5, pady=5)
 	self.video_info_label.pack()
-	self.canvas.create_window(800,250, anchor = "nw", window = self.video_info_label)
+	self.canvas.create_window(800,300, anchor = "nw", window = self.video_info_label)
 	tk.Label(self.video_info_label, text = "Video: No info").pack()
 	tk.Label(self.video_info_label, text = "Video: No info").pack()
 	
 	# Frame label window
 	self.frame_info_label = tk.LabelFrame(self.canvas, text="Frame information", padx=5, pady=5)
 	self.frame_info_label.pack()
-	self.canvas.create_window(800, 340, anchor="nw", window=self.frame_info_label)
+	self.canvas.create_window(800, 380, anchor="nw", window=self.frame_info_label)
 	tk.Label(self.frame_info_label, text="Frame: No info").pack()
 	tk.Label(self.frame_info_label, text="Frame: No info").pack()	
 	
 	# Annotation label window
 	self.frame_annot_label = tk.LabelFrame(self.canvas, text="Annotation information", padx=5, pady=5)
 	self.frame_annot_label.pack()
-	self.canvas.create_window(800, 420, anchor="nw", window=self.frame_annot_label)
+	self.canvas.create_window(800, 470, anchor="nw", window=self.frame_annot_label)
 	tk.Label(self.frame_annot_label, text="Annotated frames: No info").pack()
-	  
-	# Action label window
-	self.legend_label = tk.LabelFrame(self.canvas, text="Actions", padx=5, pady=5)
-	self.legend_label.pack()
-	self.canvas.create_window(800, 490, anchor="nw", window=self.legend_label)  
-	tk.Label(self.legend_label, text = "<--  Left \n --> Right \n ReturnKey <--| Annotate \n BackSpace < Delete Annotation ").pack()
 	
 	# Mask window
 	self.mask_label = tk.LabelFrame(self.canvas, text = "Create mask as:", padx = 5, pady =5)
@@ -105,14 +97,20 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	button8.configure(width= 5)
 	button8.pack(side = tk.LEFT)
 	
-	
+	#------------------------------------------------------------------------------------------------------------------------------------------#
 	# Annotation options window 
 	self.annotation_options_label = tk.LabelFrame(self.canvas, text = "Annotation:", padx = 5, pady =5)
-	self.canvas.create_window(800,10,anchor = "nw", window = self.annotation_options_label,width = 210,height = 230)
+	self.canvas.create_window(800,10,anchor = "nw", window = self.annotation_options_label,width = 210,height = 280)
 	
-	radio_rectangle = tk.Radiobutton(self.annotation_options_label,text ="rectangle", value = 0).pack(side="left", anchor = "nw")
-	radio_circle = tk.Radiobutton(self.annotation_options_label,text ="circle", value = 1).pack(side="left", anchor = "ne", padx = 20)
-	
+	self.shape = tk.IntVar()
+	#set rectangle as default choice
+	self.shape.set(0)
+	# Radio buttons for the rectangle and the circle
+	radio_rectangle = tk.Radiobutton(self.annotation_options_label,text ="rectangle", 
+					 value = 0, variable=self.shape, command = self.get_shape).pack(side="left", anchor = "nw")
+	radio_circle = tk.Radiobutton(self.annotation_options_label,text ="circle", 
+					 value = 1, variable=self.shape, command = self.get_shape).pack(side="left", anchor = "ne", padx = 20)
+	#------------------------------------------------------------------------------------------------------------------------------------------#
 	# rectangle frame
 	self.rectangle_frame = tk.LabelFrame(self.canvas, padx=5, pady=5)
 	self.canvas.create_window(810,55, anchor = "nw", window = self.rectangle_frame, width = 100, height = 180)
@@ -140,7 +138,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	# rectangle height slider
 	self.slider_rec_h = tk.Scale(self.rec_height_frame, orient=tk.VERTICAL, length=70, sliderlength=5, from_=1, to=480, command= lambda _:self.rectangle_change_size(h_flag = True))
 	self.slider_rec_h.pack(side="bottom", anchor="nw")
-	
+	#------------------------------------------------------------------------------------------------------------------------------------------#
 	# circle frame
 	self.circle_frame = tk.LabelFrame(self.canvas, padx=5, pady=5)
 	self.canvas.create_window(920,55, anchor = "nw", window = self.circle_frame, width = 80, height = 80)
@@ -152,10 +150,28 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	# circle radius slider
 	self.slider_circle_r = tk.Scale(self.circle_frame, orient=tk.HORIZONTAL, length=70, sliderlength=10, from_=1, to=50)
 	self.slider_circle_r.pack(side= "bottom", anchor = "nw")
+	#------------------------------------------------------------------------------------------------------------------------------------------#
+	# Annotation labels frame
+	self.annotation_labels = tk.LabelFrame(self.canvas, text="Labels", padx=5, pady=5)
+	self.canvas.create_window(810,240, anchor="nw", window=self.annotation_labels, width=195, height=40)
 	
+	self.label = tk.IntVar()
+	self.label.set(1)
+	self.label_number = self.label.get()
+	label_0 = tk.Radiobutton(self.annotation_labels,text ="0", 
+					 value = 0, variable=self.label, command=self.update_label).pack(side="left")
+	label_1 = tk.Radiobutton(self.annotation_labels,text ="1", 
+					 value = 1, variable=self.label, command=self.update_label).pack(side="left")
+	label_2 = tk.Radiobutton(self.annotation_labels,text ="2", 
+					 value = 2, variable=self.label, command=self.update_label).pack(side="left")
+	label_3 = tk.Radiobutton(self.annotation_labels,text ="3", 
+					 value = 3, variable=self.label, command=self.update_label).pack(side="left")
+	label_4 = tk.Radiobutton(self.annotation_labels,text ="4", 
+					 value = 4, variable=self.label, command=self.update_label).pack(side="left")
+	label_5 = tk.Radiobutton(self.annotation_labels,text ="5", 
+					 value = 5, variable=self.label, command=self.update_label).pack(side="left")
 	
 	#------------------------------------------------------------------------------------------------------------------------------------------#
-	
 	# Folder settings
 	
 	# main folder
@@ -217,7 +233,6 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	  # extract frames
 	  extract_frames_from_videos(videos_folder, args.videos, frames_folder_path, args.fps)
 	  
-        
         # get list of videos and the number of their frames
         self.get_number_of_videos_and_frames()
         self.video_index = 0
@@ -235,10 +250,94 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         # load the first video frames
         self.img_num = 0
         self.load_frames(self.list_of_videos[self.video_index])
+ 
+ 
+ 
+    def quit(self):
+      exit(1)
+    
+    def show_actions(self):
+      if self.show_actions_flag.get():
+	# Action label window
+	self.legend_label = tk.LabelFrame(self.canvas, text="Actions", padx=5, pady=5)
+	self.legend_label.pack()
+	self.canvas.create_window(800, 530, anchor="nw", window=self.legend_label)  
+	tk.Label(self.legend_label, text = "<--  Left \n --> Right \n ReturnKey <--| Annotate \n BackSpace < Delete Annotation ").pack()
+      else:
+	self.legend_label.destroy()
+	
+    def create_circle(self,x,y,rad):
+      pass
+      #self.polygon_id = self.canvas.create_oval(200, 300, 250, 340,outline='blue',fill='',tags="token")
+    		
+    def create_rectangle(self, center_rectangle, color, rectangle_size, new = True):
+        # Create a token at the given coordinate in the given color'''
+        (x,y) = center_rectangle
+        ####print "X", x
+        ####print "Y", y
+        # left upper corner
+        l_u_c_x = x - rectangle_size[0]/2
+        l_u_c_y = y - rectangle_size[1]/2
+         
+        # left bottom corner
+        l_b_c_x =  x - rectangle_size[0]/2
+        l_b_c_y =  y + rectangle_size[1]/2
+        
+        # right upper corner
+        r_u_c_x =  x + rectangle_size[0]/2
+        r_u_c_y = y - rectangle_size[1]/2
+        
+        # right bottom corner
+        r_b_c_x = x + rectangle_size[0]/2
+        r_b_c_y = y + rectangle_size[1]/2
+        # create new polygon
+        if new == True:
+	  self.polygon_id = self.canvas.create_polygon(l_u_c_x, l_u_c_y, r_u_c_x, r_u_c_y, r_b_c_x, r_b_c_y, l_b_c_x, l_b_c_y, outline=color, fill='', tags="token")
+	  
+	#change coords
+	else:
+	  self.canvas.coords(self.polygon_id,l_u_c_x, l_u_c_y, r_u_c_x, r_u_c_y, r_b_c_x, r_b_c_y, l_b_c_x, l_b_c_y)
+	  
+    def update_image_annotated_with_label(self,label_index):
+      if label_index != -1:
+	    print "label {} exists".format(self.label_number)
+	    width = self.rectangle_frame_pairs[self.img_num][label_index][2] - self.rectangle_frame_pairs[self.img_num][label_index][0] 
+	    height = self.rectangle_frame_pairs[self.img_num][label_index][3] - self.rectangle_frame_pairs[self.img_num][label_index][1] 
+	    self.rectangle_size[0] = width
+	    self.rectangle_size[1] = height
+	    self.rectangle_change_size(w_flag=True, h_flag=True, w=width, h=height)
+	    self.move_rectangle(label_index)
+	    self.canvas.itemconfig(self.polygon_id, outline = "red")
+      else:
+	self.canvas.itemconfig(self.polygon_id, outline = "blue")
+	
+    def update_label(self):
+      self.label_number = self.label.get()
+      # check if this image is annotated with this label before
+      if (self.rectangle_frame_pairs[self.img_num] is not 0):
+	label_index = self.get_label_index_in_list()
+	self.update_image_annotated_with_label(label_index)
+    
+    def get_shape(self):
+      shape = self.shape.get()
+      img_width = self.curr_photoimage.width()
+      img_height = self.curr_photoimage.height()
       
+      if shape == 0:
+	print "Rectangle"
+	#self.canvas.delete(self.polygon_id)
+	#self.create_rectangle((img_width/2 + self.img_start_x, img_height/2 + self.img_start_y), "blue", self.rectangle_size)
+	
+      elif shape == 1:
+	print "Circle"
+	#self.canvas.delete(self.polygon_id)
+	#self.create_circle(300,200,40)
+	
+    def circle_change_size(self):
+      print "circle change size"
       
+    
     def rectangle_change_size(self, w_flag = False, h_flag = False, ask = False, w=0, h=0):
-      
       # get the relative coords of rectangle to the image
       rec_coord = self.get_coord_rectangle()
       rect_x_center = rec_coord[0] + self.rectangle_size[0]/2
@@ -300,10 +399,9 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	self.slider_rec_h.set(height)
       
       # change the coordinates of the polygon
-      self.create_token((rect_x_center + self.img_start_x, rect_y_center + self.img_start_y), "blue", self.rectangle_size, new = False)
+      self.create_rectangle((rect_x_center + self.img_start_x, rect_y_center + self.img_start_y), "blue", self.rectangle_size, new = False)
       
-            
-      
+                 
     def load_annotations_from_file(self,file_name):
       f = file(file_name, 'rb')
       frame_rectangle_pairs = cPickle.load(f)
@@ -330,36 +428,6 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	  tkMessageBox.showinfo(title = "Mask created", message = "saved as images")
 	elif save_option == "mat":
 	  tkMessageBox.showinfo(title = "Mask created", message = "saved as mat files")	
-
-		
-    def create_token(self, center_rectangle, color, rectangle_size, new = True):
-        # Create a token at the given coordinate in the given color'''
-        (x,y) = center_rectangle
-        ####print "X", x
-        ####print "Y", y
-        # left upper corner
-        l_u_c_x = x - rectangle_size[0]/2
-        l_u_c_y = y - rectangle_size[1]/2
-         
-        # left bottom corner
-        l_b_c_x =  x - rectangle_size[0]/2
-        l_b_c_y =  y + rectangle_size[1]/2
-        
-        # right upper corner
-        r_u_c_x =  x + rectangle_size[0]/2
-        r_u_c_y = y - rectangle_size[1]/2
-        
-        # right bottom corner
-        r_b_c_x = x + rectangle_size[0]/2
-        r_b_c_y = y + rectangle_size[1]/2
-        # create new polygon
-        if new == True:
-	  self.polygon_id = self.canvas.create_polygon(l_u_c_x, l_u_c_y, r_u_c_x, r_u_c_y, r_b_c_x, r_b_c_y, l_b_c_x, l_b_c_y, outline=color, fill='', tags="token")
-	
-	else:
-	  self.canvas.coords(self.polygon_id,l_u_c_x, l_u_c_y, r_u_c_x, r_u_c_y, r_b_c_x, r_b_c_y, l_b_c_x, l_b_c_y)
-	  
-    	
     
     
     def get_number_of_videos_and_frames(self):
@@ -398,33 +466,32 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       
       self.video_num_of_frames = self.list_number_of_frames[self.video_index]
       
-      self.rectangle_frame_pairs = [0]*self.video_num_of_frames
+      
+      self.rectangle_frame_pairs = [0]*self.video_num_of_frames     
+	
       self.img_start_x = 100
       self.img_start_y = 100
-      self.img_id = self.canvas.create_image(self.img_start_x, self.img_start_y, image = self.curr_photoimage, anchor="nw") #, anchor = NW
+      self.img_id = self.canvas.create_image(self.img_start_x, self.img_start_y, image = self.curr_photoimage, anchor="nw")
       
-      
-      # this data is used to keep track of an 
-      # item being dragged
+      # this data is used to keep track of an item being dragged
       self._drag_data = {"x": 0, "y": 0, "item": None}
       
       # create a couple movable objects
       self.polygon_id = 0
       
-      # [changeable]
-      # rectangle size in x and y
+      # rectangle size in x and y (default)
       rec_h = 50
       rec_w = 100
       self.rectangle_size = [rec_w, rec_h]
       
       self.slider_rec_w.set(rec_w)
       self.slider_rec_h.set(rec_h)
-
+      
       
       img_width = self.curr_photoimage.width()
       img_height = self.curr_photoimage.height()
-      self.create_token((img_width/2 + self.img_start_x, img_height/2 + self.img_start_y), "blue", self.rectangle_size) # in here tags="token" assigned 
-
+      
+      self.create_rectangle((img_width/2 + self.img_start_x, img_height/2 + self.img_start_y), "blue", self.rectangle_size) 
       
       # add bindings for clicking, dragging and releasing over
       # any object with the "token" tag
@@ -459,10 +526,8 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       model_annot_name = os.path.join(self.annot_save_folder, self.video_name + ".model")
       if os.path.exists(model_annot_name):
 	self.load()
-
-
-    
-  
+          
+          
     def read_image_from_file(self, image_num = -1):
       # if no parameter is passed set to self.img_num + 1
       if (image_num == -1):
@@ -470,7 +535,6 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       f = os.path.join(self.frames_folder,self.video_name + "_{0}.png".format(image_num+1))
       self.curr_image_raw = io.imread(f)
     
-
 
     def create_photo_from_raw(self):
       self.curr_photoimage = ImageTk.PhotoImage(image = Image.fromarray(self.curr_image_raw))
@@ -487,26 +551,29 @@ class SampleApp(tk.Tk):  # inherit from Tk class
     
     def change_image(self):
     
-      # put here change rectangle  
       self.read_image_from_file()
       self.create_photo_from_raw()
       self.canvas.itemconfig(self.img_id, image = self.curr_photoimage)
       self.frame_info_label.winfo_children()[0].config(text = "Frame: {0:0{width}}/{1}".format(self.img_num+1, self.video_num_of_frames, width = 3))
       self.frame_info_label.winfo_children()[1].config(text="Frame: {0}".format(self.video_name + "_{0}.png".format(self.img_num+1)))
+      
+      
       if (self.rectangle_frame_pairs[self.img_num] == 0):
 	self.canvas.itemconfig(self.polygon_id, outline = "blue")
       else:
-	self.canvas.itemconfig(self.polygon_id, outline = "red") 
+	label_index = self.get_label_index_in_list()
+	if label_index == -1:
+	  self.canvas.itemconfig(self.polygon_id, outline = "blue")
+	else:
+	  self.canvas.itemconfig(self.polygon_id, outline = "red") 
       
-      counter = 0
-      for x in self.rectangle_frame_pairs:
-	if x is not 0:
-	  counter = counter + 1
+       # get number of annootated frames
+      number_of_annotaded_frames = sum([int(i !=0) for i in self.rectangle_frame_pairs])
       
-      self.frame_annot_label.winfo_children()[0].config(text="Annotated frames: {0:0{width}}/{1}".format(counter, len(self.rectangle_frame_pairs), width=3))
+      self.frame_annot_label.winfo_children()[0].config(text="Annotated frames: {0:0{width}}/{1}".format(number_of_annotaded_frames, len(self.rectangle_frame_pairs), width=3))
       
-    def move_rectangle(self):
-      rel_position = self.rectangle_frame_pairs[self.img_num]
+    def move_rectangle(self, label_index):
+      rel_position = self.rectangle_frame_pairs[self.img_num][label_index]
       
       rect_x_center = rel_position[0] + self.rectangle_size[0]/2
       rect_y_center = rel_position[1] + self.rectangle_size[1]/2
@@ -567,9 +634,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	    coord_y = 0
 	  if coord_x >= img_height-window_size[0]:
 	    break
-	  
-	
-				       	
+	  			       	
       print "Video:" , self.video_name
       print "-Segmentation with overlap",overlap,"done for frame:", self.img_num + 1, "|height:", self.rectangle_size[1],"|width:", self.rectangle_size[0] 
       tkMessageBox.showinfo(title = "Congrats", message = "Segmentation done!")
@@ -657,10 +722,6 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       # or maybe instead of this, create non-overlapping windows, but that way it can miss
       # the positive sample
       print "patches successfully saved for image: ", image_num + 1
-
-
-
-
 
 
     def extract_patches(self):
@@ -751,34 +812,24 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       
       # get the rectangle coordinates for each frame of the loaded model
       previous_frames = self.load_annotations_from_file(model_annot_name)
+      
+      self.rectangle_frame_pairs = [0]*len(previous_frames)
       self.rectangle_frame_pairs[0:len(previous_frames)] = previous_frames  
       
-      counter = 0
       w = 0
       h = 0
       # get number of annootated frames
-      for x in self.rectangle_frame_pairs:
-	if x is not 0:
-	  counter = counter + 1
+      number_of_annotaded_frames = sum([int(i !=0) for i in self.rectangle_frame_pairs])
       
       # check if the current frame is an annotated one
       if (self.rectangle_frame_pairs[self.img_num] is not 0):
+	label_index = self.get_label_index_in_list()
+	self.update_image_annotated_with_label(label_index)
 	
-	# get the width and the height of the rectangle of the current frame
-	w = self.rectangle_frame_pairs[self.img_num][2] - self.rectangle_frame_pairs[self.img_num][0]
-	h = self.rectangle_frame_pairs[self.img_num][3] - self.rectangle_frame_pairs[self.img_num][1]
-      
-	# change w and h of the rectangle and the slider
-	self.rectangle_change_size(w_flag = True,h_flag= True, w = w, h = h)
-	self.move_rectangle()
-	self.canvas.itemconfig(self.polygon_id, outline = "red")
-	
-      self.frame_annot_label.winfo_children()[0].config(text="Annotated frames: {0:0{width}}/{1}".format(counter, len(self.rectangle_frame_pairs), width=3))
+      self.frame_annot_label.winfo_children()[0].config(text="Annotated frames: {0:0{width}}/{1}".format(number_of_annotaded_frames, len(self.rectangle_frame_pairs), width=3))
       tkMessageBox.showinfo(title = "Info", message = "Annotation model loaded")
       
-      
        
-    
     def rightKey(self, event):      
       self.img_num +=1 
       if self.img_num >= self.video_num_of_frames:
@@ -793,26 +844,19 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	else:
 	  tkMessageBox.showinfo(title = "Info", message = "Annotation model not saved")
 	  
-	self.img_num = 0
 	self.video_index+=1
 	if self.video_index == self.total_num_of_videos:
 	  self.video_index = 0
 	  
+	self.img_num = 0
 	self.load_frames(self.list_of_videos[self.video_index])
       
-	# if rectangle exists redraw it
+      # check if this image is annotated
       if (self.rectangle_frame_pairs[self.img_num] is not 0):
-	width = self.rectangle_frame_pairs[self.img_num][2] - self.rectangle_frame_pairs[self.img_num][0] 
-	height = self.rectangle_frame_pairs[self.img_num][3] - self.rectangle_frame_pairs[self.img_num][1] 
-	self.rectangle_size[0] = width
-	self.rectangle_size[1] = height
-	self.rectangle_change_size(w_flag=True, h_flag=True, w=width, h=height)
-	self.move_rectangle() 
+	label_index = self.get_label_index_in_list()
+	self.update_image_annotated_with_label(label_index)
       self.change_image()
-      #print self.img_num/float(20*3600)
-      
-    
-    # same code in both right and left key, refactor
+          
     
     def leftKey(self, event):
       self.img_num -=1 
@@ -824,30 +868,38 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	if self.video_index == -1:
 	  self.video_index = self.total_num_of_videos-1
 	
-	# load frames of the previous video
 	self.img_num = self.list_number_of_frames[self.video_index] - 1
-	
 	self.load_frames(self.list_of_videos[self.video_index])
-	
-	# if rectangle exists redraw it
+        
+      # check if this image is annotated
       if (self.rectangle_frame_pairs[self.img_num] is not 0):
-	width = self.rectangle_frame_pairs[self.img_num][2] - self.rectangle_frame_pairs[self.img_num][0] 
-	height = self.rectangle_frame_pairs[self.img_num][3] - self.rectangle_frame_pairs[self.img_num][1] 
-	self.rectangle_size[0] = width
-	self.rectangle_size[1] = height
-	self.rectangle_change_size(w_flag=True, h_flag=True, w=width, h=height)
-	self.move_rectangle() 
+	label_index = self.get_label_index_in_list()
+	self.update_image_annotated_with_label(label_index)
       self.change_image()
-    
-    
-    
+  
+  
+    def get_label_index_in_list(self):
+       # number of previous labels for this image
+      size_labels = len(self.rectangle_frame_pairs[self.img_num])
+      label_exists = False
+      # check if there was a previous annotation for the given label number
+      for i in range(0, size_labels):
+	if self.label_number == self.rectangle_frame_pairs[self.img_num][i][-1]:
+	  label_exists = True
+	  return i
+	
+      return -1
+  
+  
+  
     def returnKey(self, event):
         #save rectangle position
         img_width = self.curr_photoimage.width()
 	img_height = self.curr_photoimage.height()
 	
 	coords_relative = self.get_coord_rectangle()
-	
+	# add the label number at the end of the coords
+	coords_relative.append(self.label_number)
 	#check if there was bad annotations
 	# rectangle is defined by left top corner and right bottom corner
 	left_upper_x = coords_relative[0]
@@ -860,15 +912,30 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	  tkMessageBox.showinfo(title = "Info", message = "Bad annotation, try again")
 	  return
 	
-	self.rectangle_frame_pairs[self.img_num] = coords_relative
+	# if first time to annotate this frame
+	if self.rectangle_frame_pairs[self.img_num] is 0:
+	  self.rectangle_frame_pairs[self.img_num] = []
+	  self.rectangle_frame_pairs[self.img_num].append(coords_relative)
+	  
+	# else check for previous annotations
+	else:
+	  label_index = self.get_label_index_in_list()
+	  
+	  if label_index != -1:
+	    self.rectangle_frame_pairs[self.img_num][label_index] = coords_relative
+	  else:
+	    self.rectangle_frame_pairs[self.img_num].append(coords_relative)
+	    
+	  
+	print self.rectangle_frame_pairs
+	
 	if (self.flag == 0):  
 	  #proveri uste ednas koordinatite
 	  self.tracker.start_track(self.curr_image_raw, dlib.rectangle(coords_relative[0],coords_relative[1],coords_relative[2],coords_relative[3]))
 	  #self.tracker.start_track(self.images_raw[0], dlib.rectangle(170, 200, 240, 240))
 	  self.flag = 1 
 	  
-        else: 
-	  
+        else:
 	  #update filter
 	  self.tracker.update(self.curr_image_raw, dlib.rectangle(coords_relative[0],coords_relative[1],coords_relative[2],coords_relative[3]))
 	  
@@ -876,7 +943,6 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	  rel_position = self.tracker.get_position()
 	  curr_position = self.get_coord_rectangle()
 	
-	  # refactor this code as well
 	  self.canvas.move(self.polygon_id, -curr_position[0]+rel_position.left(), -curr_position[1]+rel_position.top())
       
 	self.img_num += 1
@@ -900,24 +966,24 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	  # load frames of the next video
 	  self.load_frames(self.list_of_videos[self.video_index])
 	  
-	if (self.rectangle_frame_pairs[self.img_num] is not 0):
-	  width = self.rectangle_frame_pairs[self.img_num][2] - self.rectangle_frame_pairs[self.img_num][0] 
-	  height = self.rectangle_frame_pairs[self.img_num][3] - self.rectangle_frame_pairs[self.img_num][1] 
-	  self.rectangle_size[0] = width
-	  self.rectangle_size[1] = height
-	  self.rectangle_change_size(w_flag=True, h_flag=True, w=width, h=height)
-	  self.move_rectangle()  
+	# update according to the label number selected
+	if self.rectangle_frame_pairs[self.img_num] is not 0:
+	  label_index = self.get_label_index_in_list()
+	  self.update_image_annotated_with_label(label_index) 
 	self.change_image()
 	
 	
     def backspaceKey(self, event):
-      self.rectangle_frame_pairs[self.img_num] = 0
-      self.canvas.itemconfig(self.polygon_id, outline = "blue")
-      counter = 0
-      for x in self.rectangle_frame_pairs:
-	if x is not 0:
-	  counter = counter + 1
-      self.frame_annot_label.winfo_children()[0].config(text="Annotated frames: {0:0{width}}/{1}".format(counter, len(self.rectangle_frame_pairs), width=3))
+      label_index = self.get_label_index_in_list()
+      if label_index != -1:
+	del self.rectangle_frame_pairs[self.img_num][label_index]
+	if len(self.rectangle_frame_pairs[self.img_num]) == 0:
+	  self.rectangle_frame_pairs[self.img_num] = 0
+	self.canvas.itemconfig(self.polygon_id, outline = "blue")
+      
+       # get number of annootated frames
+      number_of_annotaded_frames = sum([int(i !=0) for i in self.rectangle_frame_pairs])
+      self.frame_annot_label.winfo_children()[0].config(text="Annotated frames: {0:0{width}}/{1}".format(number_of_annotaded_frames, len(self.rectangle_frame_pairs), width=3))
 
     
     def OnTokenButtonPress(self, event):
@@ -928,7 +994,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         self._drag_data["y"] = event.y 
     
         # put item to front
-        self.canvas.tag_raise(self._drag_data["item"])
+        #self.canvas.tag_raise(self._drag_data["item"]) ??
 
     def OnTokenButtonRelease(self, event):
         '''End drag of an object'''
@@ -940,6 +1006,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
     def OnTokenMotion(self, event):
         '''Handle dragging of an object'''
         # compute how much this object has moved
+        
         delta_x = event.x - self._drag_data["x"]
         delta_y = event.y - self._drag_data["y"]
         
@@ -949,8 +1016,6 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         # record the new position
         self._drag_data["x"] = event.x
         self._drag_data["y"] = event.y
-
-
 
 if __name__ == "__main__":
   parser = argparse.ArgumentParser(description = "Annotation Program")
