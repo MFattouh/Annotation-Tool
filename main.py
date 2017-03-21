@@ -9,13 +9,15 @@ import glob		# some linux command functions
 import numpy as np	# matlab python stuff
 import cPickle		# saving rectangle pairs (list i/o)
 import datetime		# date time function 
+import time
+import argparse # for the arguments passed 
 from sklearn.feature_extraction import image # just another image processing lib
 import extract_patches	# for patch extraction?
 from extract_frames import extract_frames_from_videos # frame extraction function
 from extract_frames import get_video_file_name
-import argparse # for the arguments passed 
 from compute_masks import create_masks_for_model # for creating the mask 
-import time
+from hdf5_export import generate_hd5f
+
 
 
 class SampleApp(tk.Tk):  # inherit from Tk class 
@@ -222,7 +224,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	
 	
 	# export hdf5 button
-	hdf5_export_btn = tk.Button(self.hd5f_frame, text="HDF5 export", command=self.hdf5_export, padx=5, pady=5)
+	hdf5_export_btn = tk.Button(self.hd5f_frame, text="HDF5 export", command=self.hdf5_export_fn, padx=5, pady=5)
 	hdf5_export_btn.pack(side="bottom")
 	
 	
@@ -307,7 +309,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         self.img_num = 0
         self.load_frames(self.list_of_videos[self.video_index])
  
-    def hdf5_export(self):
+    def hdf5_export_fn(self):
       if self.rotation_rand_num.get() != "":
 	# check if it is a positive int digit
 	if self.rotation_rand_num.get().isdigit():
@@ -322,6 +324,10 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	# check if it is a positive int digit
 	if self.scale_rand_num.get().isdigit():
 	  print "Scale random number", self.scale_rand_num.get()
+      
+      downsample_x = 300
+      downsample_y = 300
+      generate_hd5f(False, downsample_x, downsample_y, self.total_num_of_frames, self.mask_folder, self.frames_folder, self.output_folder)
       
     def check_augmentation_boxes(self):
       if self.rotation.get():
@@ -343,8 +349,6 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	self.scale_entry.config(state='disabled')
       # return the focus to the canvas
       self.canvas.focus_set()
-      
-	
       
     def quit(self):
       exit(1)
