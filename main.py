@@ -108,33 +108,33 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	self.shape.set(0)
 	# Radio buttons for the rectangle and the circle
 	radio_rectangle = tk.Radiobutton(self.annotation_options_label,text ="rectangle", 
-					 value = 0, variable=self.shape, command = self.get_shape).pack(side="left", anchor = "nw")
+					 value=0, variable=self.shape, command=self.get_shape).pack(side="left", anchor="nw")
 	radio_circle = tk.Radiobutton(self.annotation_options_label,text ="circle", 
-					 value = 1, variable=self.shape, command = self.get_shape).pack(side="left", anchor = "ne", padx = 20)
+					 value=1, variable=self.shape, command=self.get_shape).pack(side="left", anchor="ne", padx=20)
 	#------------------------------------------------------------------------------------------------------------------------------------------#
 	# rectangle frame
 	self.rectangle_frame = tk.LabelFrame(self.canvas, padx=5, pady=5)
-	self.canvas.create_window(810,55, anchor = "nw", window = self.rectangle_frame, width = 100, height = 180)
+	self.canvas.create_window(810,55, anchor="nw", window=self.rectangle_frame, width=100, height=180)
 	
 	# width frame
 	self.rec_width_frame = tk.LabelFrame(self.canvas, padx=5, pady=5)
-	self.canvas.create_window(820,60, anchor = "nw", window = self.rec_width_frame, width = 80, height = 80)
+	self.canvas.create_window(820,60, anchor="nw", window=self.rec_width_frame, width=80, height=80)
 	
 	# rectangle width button
-	button9 = tk.Button(self.rec_width_frame, text = "width",command = lambda: self.rectangle_change_size(w_flag = True, ask = True), width = 5)
+	button9 = tk.Button(self.rec_width_frame, text="width",command=lambda: self.rectangle_change_size(w_flag=True, ask=True), width=5)
 	button9.pack(side="top", anchor="nw")
 	
 	# rectangle width slider
-	self.slider_rec_w = tk.Scale(self.rec_width_frame, orient=tk.HORIZONTAL, length=70, sliderlength=10, from_=1, to=640, command= lambda _:self.rectangle_change_size(w_flag = True))
+	self.slider_rec_w = tk.Scale(self.rec_width_frame, orient=tk.HORIZONTAL, length=70, sliderlength=10, from_=1, to=640, command=lambda _:self.rectangle_change_size(w_flag=True))
 	self.slider_rec_w.pack(side="left", anchor="nw")
 	
 	# rectangle height frame
 	self.rec_height_frame = tk.LabelFrame(self.canvas, padx=5, pady=5)
-	self.canvas.create_window(820,145, anchor = "nw", window = self.rec_height_frame, width = 80, height = 80)
+	self.canvas.create_window(820,145, anchor="nw", window=self.rec_height_frame, width=80, height=80)
 	
 	# rectangle heigth button
-	button10 = tk.Button(self.rec_height_frame, text = "height",command = lambda: self.rectangle_change_size(h_flag = True, ask = True),width = 5)
-	button10.pack(side="top", anchor = "n")
+	button10 = tk.Button(self.rec_height_frame, text="height",command=lambda: self.rectangle_change_size(h_flag=True, ask=True), width=5)
+	button10.pack(side="top", anchor="n")
 	
 	# rectangle height slider
 	self.slider_rec_h = tk.Scale(self.rec_height_frame, orient=tk.VERTICAL, length=70, sliderlength=5, from_=1, to=480, command= lambda _:self.rectangle_change_size(h_flag = True))
@@ -327,17 +327,24 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       if self.rotation.get():
 	self.rotation_entry.config(state='normal')
       else:
+	self.rotation_entry.delete(0, tk.END)
 	self.rotation_entry.config(state='disabled')
-      
+	
       if self.color.get():
 	self.color_entry.config(state='normal')
       else:
+	self.color_entry.delete(0, tk.END)
 	self.color_entry.config(state='disabled')
 	
       if self.scale.get():
 	self.scale_entry.config(state='normal')
       else:
+	self.scale_entry.delete(0, tk.END)
 	self.scale_entry.config(state='disabled')
+      # return the focus to the canvas
+      self.canvas.focus_set()
+      
+	
       
     def quit(self):
       exit(1)
@@ -401,7 +408,6 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	
 	
     def all_annotations_mode(self):
-      print "Get all annotations mode"
       # delete rectangle(s)
       for i in range(0, self.num_labels):
 	self.canvas.delete(self.polygon_id[i])
@@ -409,12 +415,9 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       if (self.rectangle_frame_pairs[self.img_num] is not 0):
 	# get number of labels for this image
 	size_labels = len(self.rectangle_frame_pairs[self.img_num])
-	print "Number of labels for this image", size_labels
 	# go through the labels for this image and make annotations for all of them
 	for i in range(0, size_labels):
 	  label = self.rectangle_frame_pairs[self.img_num][i][-1]
-	  print self.rectangle_frame_pairs[self.img_num][i][-1]
-	  print "color", self.label_colors[label]
 	  rec_width = self.rectangle_frame_pairs[self.img_num][i][2] - self.rectangle_frame_pairs[self.img_num][i][0]
 	  rec_height = self.rectangle_frame_pairs[self.img_num][i][3] - self.rectangle_frame_pairs[self.img_num][i][1]
 	  rec_x_center = self.rectangle_frame_pairs[self.img_num][i][0] + rec_width/2 + self.img_start_x
@@ -423,7 +426,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	      
     def update_label(self):
       self.label_number = self.label.get()
-      # check if this image is annotated with this label before
+      
       if self.label_number == 0:
 	self.all_annotations_mode()
       
@@ -435,8 +438,10 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	# create new rectangle (default)
 	img_width = self.curr_photoimage.width()
 	img_height = self.curr_photoimage.height()	
-	self.create_rectangle((img_width/2 + self.img_start_x, img_height/2 + self.img_start_y), "blue", [100,50]) 
-	
+	rec_w = 100
+	rec_h = 50
+	self.create_rectangle((img_width/2 + self.img_start_x, img_height/2 + self.img_start_y), "blue", [rec_w,rec_h]) 
+	self.rectangle_change_size(w_flag = True, h_flag = True, ask = False,w=rec_w, h=rec_h, change_size = False)
 	# if this image is annotated
 	if (self.rectangle_frame_pairs[self.img_num] is not 0):  
 	  # check the annotation with the label selected
@@ -463,7 +468,11 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       print "circle change size"
       
     
-    def rectangle_change_size(self, w_flag = False, h_flag = False, ask = False, w=0, h=0):
+    def rectangle_change_size(self, w_flag = False, h_flag = False, ask = False, w=0, h=0, change_size = True):
+      
+      if self.label_number == 0:
+	return
+      
       # get the relative coords of rectangle to the image
       rec_coord = self.get_coord_rectangle()
       rect_x_center = rec_coord[0] + self.rectangle_size[0]/2
@@ -524,9 +533,10 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	self.rectangle_size[1] = height
 	self.slider_rec_h.set(height)
       
-      # change the coordinates of the polygon
-      self.create_rectangle((rect_x_center + self.img_start_x, rect_y_center + self.img_start_y), "blue", self.rectangle_size, new = False)
-      
+      if change_size == True:
+	# change the coordinates of the polygon
+	self.create_rectangle((rect_x_center + self.img_start_x, rect_y_center + self.img_start_y), "blue", self.rectangle_size, new = False)
+	
                  
     def load_annotations_from_file(self,file_name):
       f = file(file_name, 'rb')
@@ -855,6 +865,10 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       if not self.frames_folder:
 	tkMessageBox.showinfo(title = "Warning", message = "Load video frames directory first")
 	return
+      
+      if self.label_number == 0:
+	tkMessageBox.showinfo(title = "Warning", message = "Can not extract while label is 0")
+	return 
        
       # check if there is annotated model for the current video
       model_annot_name = os.path.join(self.annot_save_folder, self.video_name + ".model")
@@ -884,6 +898,10 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       # check if there is a frame folder loaded first
       if not self.frames_folder:
 	tkMessageBox.showinfo(title = "Warning", message = "Load video frames directory first")
+	return
+    
+      if self.label_number == 0:
+	tkMessageBox.showinfo(title = "Warning", message = "Can not segment while label is 0")
 	return
       
       overlap = tkSimpleDialog.askinteger("Overlap","Choose an overlap",parent = self.canvas)
