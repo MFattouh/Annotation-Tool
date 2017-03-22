@@ -269,7 +269,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         #check if already exists
         if not os.path.exists(annotation_folder):
 	  os.makedirs(annotation_folder)
-        self.annot_save_folder = os.path.abspath(annotation_folder)
+        self.annotation_folder = os.path.abspath(annotation_folder)
         
         # masks folder
         mask_folder =  os.path.join(output_folder,"masks/")
@@ -318,7 +318,6 @@ class SampleApp(tk.Tk):  # inherit from Tk class
     def show_masks(self):
       # don't show masks
       if self.show_mask_flag.get() == 0:
-	print "don't show"
 	self.curr_photo_image_mask_only = ImageTk.PhotoImage(image = Image.fromarray(self.curr_image_raw))
 	self.canvas.itemconfig(self.img_id, image = self.curr_photo_image_mask_only)
 	if self.label_number != 0:
@@ -351,7 +350,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       
       downsample_x = 300
       downsample_y = 300
-      generate_hd5f(downsample_x, downsample_y, self.total_num_of_frames, self.mask_folder, self.frames_folder, self.output_folder)
+      generate_hd5f(downsample_x, downsample_y, self.total_num_of_frames, self.annotation_folder, self.frames_folder, self.output_folder)
       tkMessageBox.showinfo(title="Info", message="HDF5 file exported !")
       
     def check_augmentation_boxes(self):
@@ -581,7 +580,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	tkMessageBox.showinfo(title = "Warning", message = "Load video frames directory first")
 	return
       
-      model_annot_name = os.path.join(self.annot_save_folder, self.video_name + ".model")
+      model_annot_name = os.path.join(self.annotation_folder, self.video_name + ".model")
       if not os.path.exists(model_annot_name):
 	tkMessageBox.showinfo(title = "Warning", message = "Annotated model doesn't exist for this video")
       else:
@@ -690,7 +689,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       self.frame_annot_label.winfo_children()[0].config(text="Annotated frames: 000/{0}".format(self.video_num_of_frames))        
      
       #check if there is an annotation model for this video
-      model_annot_name = os.path.join(self.annot_save_folder, self.video_name + ".model")
+      model_annot_name = os.path.join(self.annotation_folder, self.video_name + ".model")
       if os.path.exists(model_annot_name):
 	self.load()
           
@@ -902,7 +901,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	return 
        
       # check if there is annotated model for the current video
-      model_annot_name = os.path.join(self.annot_save_folder, self.video_name + ".model")
+      model_annot_name = os.path.join(self.annotation_folder, self.video_name + ".model")
       if not os.path.exists(model_annot_name):
 	tkMessageBox.showinfo(title = "Warning", message = "Annotated model doesn't exist for this video")
       
@@ -964,7 +963,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       
       # check if there is already a model 
       result = "yes"
-      model_annot_name = os.path.join(self.annot_save_folder, self.video_name + ".model")
+      model_annot_name = os.path.join(self.annotation_folder, self.video_name + ".model")
       if os.path.exists(model_annot_name):
 	result = tkMessageBox.askquestion("Overwrite", "Are you sure?", icon = "warning")
 	
@@ -980,7 +979,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
     
     def load(self):
        #check if there is a model for the current video frames
-      model_annot_name = os.path.join(self.annot_save_folder, self.video_name + ".model")
+      model_annot_name = os.path.join(self.annotation_folder, self.video_name + ".model")
       if not os.path.exists(model_annot_name):
 	tkMessageBox.showinfo(title = "Info", message = "No existing annotation model")
 	return
@@ -1010,7 +1009,8 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       if self.img_num >= self.video_num_of_frames:
 	
 	#delete rectangle
-	self.canvas.delete(self.polygon_id[0])
+	for i in range(0, self.num_labels):
+	  self.canvas.delete(self.polygon_id[i])
 	
 	save_annot = "no"
 	save_annot = tkMessageBox.askquestion("End of video frames", "Save annotations?", icon = "warning")
@@ -1043,7 +1043,8 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       self.img_num -=1 
       if self.img_num < 0: 
 	# delete rectangle
-	self.canvas.delete(self.polygon_id[0])
+	for i in range(0, self.num_labels):
+	  self.canvas.delete(self.polygon_id[i])
 	
 	self.video_index-=1
 	if self.video_index == -1:

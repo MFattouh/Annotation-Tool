@@ -45,7 +45,6 @@ def create_masks_for_model(annotated_model, mask_path, video_name, img_width, im
     images_counter = images_counter + 1 
     if (frame % 1000 == 0 and frame>=1000):
       print images_counter
-
       
 def create_mask_for_image(image_array, image_annotation, label_number):
   image_height = image_array.shape[0]

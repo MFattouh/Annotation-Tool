@@ -3,8 +3,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
+# change the file path and the color flag if desired
 hdf5_folder = "/home/mohamed/Desktop/Opto/AnnotationTool/Pendulum/hdf5_files/"
 filename = hdf5_folder + "20170219_meansub_downsample_300x300_MASK_300x300.hdf5"
+color = False
 
 f=h5py.File(filename,"r")
 
@@ -24,12 +26,13 @@ print "\t-min value: ",np.min(data)
 print "\t-type:", data.dtype
 print "-----------------------------------"
 
-color = False
+
 
 examples = data.shape[0]
 # load the first N examples of the training set 
 for exp in range(0,examples):
-  
+  print "-----------------------------------------------"
+  print "Example", exp+1
   if color:
     frame = np.zeros((data.shape[2],data.shape[3],data.shape[1]))
     mask = np.zeros((data.shape[2],data.shape[3],data.shape[1]))
@@ -43,23 +46,24 @@ for exp in range(0,examples):
   else:
     frame = data[exp,0,:,:]
     mask = label[exp,0,:,:]
+    
+  print "-Data size:", frame.shape
+  print "-Label size:", mask.shape
   
-  print mask.shape
-  print frame.shape
   if (data.shape[2]==label.shape[2]) and (data.shape[3]==label.shape[3]):
-    print "same size..."
-    #mask[np.where(mask==1)] = 255  # change max value to 1 !
     plt.figure
     vis = np.concatenate((mask,frame),axis=1)
     #plt.imshow(mask,cmap='gray')
+    
+    # replace vis with mask if u want to see the mask (somehow the mask doesn't appear when concatenated with the frames)
     plt.imshow(vis,cmap='gray')
     plt.show
     
     if np.max(mask) != np.min(mask):
-      print "object visible"
-      plt.pause(2)
+      print "-Object visible"
+      plt.pause(1)
     else:
-      print "object not visible"
+      print "-Object not visible"
 
   else: 
     #mask.resize(frame.shape);
