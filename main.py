@@ -11,11 +11,14 @@ import cPickle		# saving rectangle pairs (list i/o)
 import datetime		# date time function 
 import time
 import argparse # for the arguments passed 
+import matplotlib.pyplot as plt
 from sklearn.feature_extraction import image # just another image processing lib
+
 import extract_patches	# for patch extraction?
 from extract_frames import extract_frames_from_videos # frame extraction function
 from extract_frames import get_video_file_name
 from compute_masks import create_masks_for_model # for creating the mask 
+from compute_masks import create_mask_for_image # mask for single image
 from hdf5_export import generate_hd5f
 
 
@@ -72,21 +75,21 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	# Video label window
 	self.video_info_label = tk.LabelFrame(self.canvas, text = "Video information", padx=5, pady=5)
 	self.video_info_label.pack()
-	self.canvas.create_window(800,300, anchor = "nw", window = self.video_info_label)
+	self.canvas.create_window(800,320, anchor = "nw", window = self.video_info_label)
 	tk.Label(self.video_info_label, text = "Video: No info").pack()
 	tk.Label(self.video_info_label, text = "Video: No info").pack()
 	
 	# Frame label window
 	self.frame_info_label = tk.LabelFrame(self.canvas, text="Frame information", padx=5, pady=5)
 	self.frame_info_label.pack()
-	self.canvas.create_window(800, 380, anchor="nw", window=self.frame_info_label)
+	self.canvas.create_window(800, 400, anchor="nw", window=self.frame_info_label)
 	tk.Label(self.frame_info_label, text="Frame: No info").pack()
 	tk.Label(self.frame_info_label, text="Frame: No info").pack()	
 	
 	# Annotation label window
 	self.frame_annot_label = tk.LabelFrame(self.canvas, text="Annotation information", padx=5, pady=5)
 	self.frame_annot_label.pack()
-	self.canvas.create_window(800, 470, anchor="nw", window=self.frame_annot_label)
+	self.canvas.create_window(800, 490, anchor="nw", window=self.frame_annot_label)
 	tk.Label(self.frame_annot_label, text="Annotated frames: No info").pack()
 	
 	# Mask window
@@ -103,7 +106,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	#------------------------------------------------------------------------------------------------------------------------------------------#
 	# Annotation options window 
 	self.annotation_options_label = tk.LabelFrame(self.canvas, text = "Annotation:", padx = 5, pady =5)
-	self.canvas.create_window(800,10,anchor = "nw", window = self.annotation_options_label,width = 260,height = 280)
+	self.canvas.create_window(800,10,anchor = "nw", window = self.annotation_options_label,width = 260,height = 300	)
 	
 	self.shape = tk.IntVar()
 	#set rectangle as default choice
@@ -176,6 +179,11 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	label_5 = tk.Radiobutton(self.annotation_labels,text ="5", 
 					 value = 5, variable=self.label, fg=self.label_colors[5], command=self.update_label).pack(side="left")
 	
+	# check box
+	self.show_mask_flag = tk.IntVar()
+	check_box_mask = tk.Checkbutton(self.annotation_options_label, text="Show masks only", variable=self.show_mask_flag, command=self.show_masks)
+	check_box_mask.place(x=0, y=250)
+	
 	#------------------------------------------------------------------------------------------------------------------------------------------#
 	# HDF5 frame
 	self.hd5f_frame = tk.LabelFrame(self.canvas, text="HDF5", padx=5, pady=5)
@@ -226,9 +234,6 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	# export hdf5 button
 	hdf5_export_btn = tk.Button(self.hd5f_frame, text="HDF5 export", command=self.hdf5_export_fn, padx=5, pady=5)
 	hdf5_export_btn.pack(side="bottom")
-	
-	
-	
 	#------------------------------------------------------------------------------------------------------------------------------------------#
 	# Folder settings
 	
@@ -308,6 +313,25 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         # load the first video frames
         self.img_num = 0
         self.load_frames(self.list_of_videos[self.video_index])
+   
+   
+    def show_masks(self):
+      # don't show masks
+      if self.show_mask_flag.get() == 0:
+	print "don't show"
+	self.curr_photo_image_mask_only = ImageTk.PhotoImage(image = Image.fromarray(self.curr_image_raw))
+	self.canvas.itemconfig(self.img_id, image = self.curr_photo_image_mask_only)
+	if self.label_number != 0:
+	  self.canvas.itemconfig(self.polygon_id[0], tags='token')
+	  
+      # Show masks only
+      else:
+	self.curr_image_raw_masks_only = create_mask_for_image(self.curr_image_raw, self.rectangle_frame_pairs[self.img_num], self.label_number)
+	# no annotations
+	self.curr_photo_image_mask_only = ImageTk.PhotoImage(image = Image.fromarray(self.curr_image_raw_masks_only))
+	self.canvas.itemconfig(self.img_id, image = self.curr_photo_image_mask_only)
+	self.canvas.itemconfig(self.polygon_id[0], tags='')
+ 
  
     def hdf5_export_fn(self):
       if self.rotation_rand_num.get() != "":
@@ -327,7 +351,8 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       
       downsample_x = 300
       downsample_y = 300
-      generate_hd5f(False, downsample_x, downsample_y, self.total_num_of_frames, self.mask_folder, self.frames_folder, self.output_folder)
+      generate_hd5f(downsample_x, downsample_y, self.total_num_of_frames, self.mask_folder, self.frames_folder, self.output_folder)
+      tkMessageBox.showinfo(title="Info", message="HDF5 file exported !")
       
     def check_augmentation_boxes(self):
       if self.rotation.get():
@@ -358,7 +383,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	# Action label window
 	self.legend_label = tk.LabelFrame(self.canvas, text="Actions", padx=5, pady=5)
 	self.legend_label.pack()
-	self.canvas.create_window(800, 530, anchor="nw", window=self.legend_label)  
+	self.canvas.create_window(800, 540, anchor="nw", window=self.legend_label)  
 	tk.Label(self.legend_label, text = "<--  Left \n --> Right \n ReturnKey <--| Annotate \n BackSpace < Delete Annotation ").pack()
       else:
 	self.legend_label.destroy()
@@ -452,6 +477,8 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	  label_index = self.get_label_index_in_list()
 	  # update image with the annotation of the label
 	  self.update_image_annotated_with_label(label_index)
+	  
+      self.show_masks()
       
     def get_shape(self):
       shape = self.shape.get()
@@ -476,7 +503,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       
       if self.label_number == 0:
 	return
-      
+	
       # get the relative coords of rectangle to the image
       rec_coord = self.get_coord_rectangle()
       rect_x_center = rec_coord[0] + self.rectangle_size[0]/2
@@ -1008,7 +1035,8 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       elif (self.rectangle_frame_pairs[self.img_num] is not 0):
 	label_index = self.get_label_index_in_list()
 	self.update_image_annotated_with_label(label_index)
-      
+	
+      self.show_masks()
           
     
     def leftKey(self, event):
@@ -1034,7 +1062,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	label_index = self.get_label_index_in_list()
 	self.update_image_annotated_with_label(label_index)
       
-  
+      self.show_masks()
   
     def get_label_index_in_list(self):
        # number of previous labels for this image
@@ -1050,6 +1078,11 @@ class SampleApp(tk.Tk):  # inherit from Tk class
   
   
     def returnKey(self, event):
+      # don't annotate if you are in the mask only mode
+      if self.show_mask_flag.get() == 1:
+	tkMessageBox.showinfo(title="Info",message="Can not annotate in this mode")
+	return 
+      
       # check if the label is not 0
       if self.label_number == 0:
 	tkMessageBox.showinfo(title="Warning",message="Can not annotate while label is 0")
@@ -1133,6 +1166,12 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       
 	
     def backspaceKey(self, event):
+      
+      # don't delete if you are in the mask only mode
+      if self.show_mask_flag.get() == 1:
+	tkMessageBox.showinfo(title="Info",message="Can not delete in this mode")
+	return 
+      
       # delete all annotations for all the labels if label is 0
       if self.label_number == 0:
 	self.rectangle_frame_pairs[self.img_num] = 0
