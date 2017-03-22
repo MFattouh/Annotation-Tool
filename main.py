@@ -79,17 +79,25 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	tk.Label(self.video_info_label, text = "Video: No info").pack()
 	tk.Label(self.video_info_label, text = "Video: No info").pack()
 	
+	next_video_btn = tk.Button(self.video_info_label, text="Next", command=lambda: self.next_video())
+	next_video_btn.configure(width=10)
+	next_video_btn.pack(side = "right",anchor="ne")
+	
+	prev_video_btn = tk.Button(self.video_info_label, text="Previous", command=lambda: self.next_video(forward=False))
+	prev_video_btn.configure(width=10)
+	prev_video_btn.pack(anchor="nw")
+	
 	# Frame label window
 	self.frame_info_label = tk.LabelFrame(self.canvas, text="Frame information", padx=5, pady=5)
 	self.frame_info_label.pack()
-	self.canvas.create_window(800, 400, anchor="nw", window=self.frame_info_label)
+	self.canvas.create_window(800, 430, anchor="nw", window=self.frame_info_label)
 	tk.Label(self.frame_info_label, text="Frame: No info").pack()
 	tk.Label(self.frame_info_label, text="Frame: No info").pack()	
 	
 	# Annotation label window
 	self.frame_annot_label = tk.LabelFrame(self.canvas, text="Annotation information", padx=5, pady=5)
 	self.frame_annot_label.pack()
-	self.canvas.create_window(800, 490, anchor="nw", window=self.frame_annot_label)
+	self.canvas.create_window(800, 510, anchor="nw", window=self.frame_annot_label)
 	tk.Label(self.frame_annot_label, text="Annotated frames: No info").pack()
 	
 	# Mask window
@@ -958,7 +966,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       number_of_annotaded_frames = sum([int(i !=0) for i in self.rectangle_frame_pairs])
       if number_of_annotaded_frames == 0:
 	tkMessageBox.showinfo(title = "Warning", message = "At least annotate one frame!")
-	return
+	return -1
       
       
       # check if there is already a model 
@@ -1003,21 +1011,62 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       self.frame_annot_label.winfo_children()[0].config(text="Annotated frames: {0:0{width}}/{1}".format(number_of_annotaded_frames, len(self.rectangle_frame_pairs), width=3))
       tkMessageBox.showinfo(title = "Info", message = "Annotation model loaded")
       
-       
+   
+    
+    def next_video(self, forward=True):
+      save_annot = "no"
+      save_annot = tkMessageBox.askquestion("End of video frames", "Save annotations?", icon = "warning")
+      if save_annot == "yes":
+	if self.save() == -1:
+	  return
+      else:
+	tkMessageBox.showinfo(title = "Info", message = "Annotation model not saved")
+	
+      #delete rectangle
+      for i in range(0, self.num_labels):
+	self.canvas.delete(self.polygon_id[i])
+      
+      if forward is True:
+	self.video_index+=1
+	if self.video_index == self.total_num_of_videos:
+	  self.video_index = 0
+      else:
+	self.video_index-=1
+	if self.video_index == -1:
+	  self.video_index = self.total_num_of_videos-1
+	  
+	
+      self.img_num = 0
+      self.load_frames(self.list_of_videos[self.video_index])
+    
+      self.change_image()
+      # check if label 0 is chosen
+      if self.label_number == 0:
+	self.all_annotations_mode()
+      
+      # check if this image is annotated
+      elif (self.rectangle_frame_pairs[self.img_num] is not 0):
+	label_index = self.get_label_index_in_list()
+	self.update_image_annotated_with_label(label_index)
+	
+      self.show_masks()
+      
+      
     def rightKey(self, event):      
       self.img_num +=1 
       if self.img_num >= self.video_num_of_frames:
 	
-	#delete rectangle
-	for i in range(0, self.num_labels):
-	  self.canvas.delete(self.polygon_id[i])
-	
 	save_annot = "no"
 	save_annot = tkMessageBox.askquestion("End of video frames", "Save annotations?", icon = "warning")
 	if save_annot == "yes":
-	  self.save()
+	  if self.save() == -1:
+	    return
 	else:
 	  tkMessageBox.showinfo(title = "Info", message = "Annotation model not saved")
+	  
+	#delete rectangle
+	for i in range(0, self.num_labels):
+	  self.canvas.delete(self.polygon_id[i])
 	  
 	self.video_index+=1
 	if self.video_index == self.total_num_of_videos:
@@ -1042,6 +1091,15 @@ class SampleApp(tk.Tk):  # inherit from Tk class
     def leftKey(self, event):
       self.img_num -=1 
       if self.img_num < 0: 
+	
+	save_annot = "no"
+	save_annot = tkMessageBox.askquestion("End of video frames", "Save annotations?", icon = "warning")
+	if save_annot == "yes":
+	  if self.save() == -1:
+	    return
+	else:
+	  tkMessageBox.showinfo(title = "Info", message = "Annotation model not saved")
+	  
 	# delete rectangle
 	for i in range(0, self.num_labels):
 	  self.canvas.delete(self.polygon_id[i])
