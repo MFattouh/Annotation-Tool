@@ -109,7 +109,7 @@ def generate_hd5f(TARGET_X_DIM, TARGET_Y_DIM, num_all_frames, annotation_folder_
   
   # loop for each annotation model
   # downsample + putting data and label in the corresponding structures for hdf5 file
-  print "---------------------- Begin HDF5 export -------------------------"
+  print "---------------------- Begin Augmentation -------------------------"
   for index, (annotation_video,annotation_video_name) in enumerate(zip(annotation_list_rectangle_pairs,annotation_list_name)): 
     
     # add frames and masks to hdf5 if only both the frame and its annotation exists
@@ -136,8 +136,11 @@ def generate_hd5f(TARGET_X_DIM, TARGET_Y_DIM, num_all_frames, annotation_folder_
 	  frame = cv2.imread(frame_path,0)
 	  # mean substraction
 	  frame[:,:] = frame[:,:] - mean_value[0]
-	 
-	mask = np.zeros_like(frame)
+	
+	height = frame.shape[0]
+	width = frame.shape[1]
+	
+	mask = np.zeros((height,width))
 
 	# creating the mask array for the current frame
 	# for each label in the current frame
@@ -145,30 +148,98 @@ def generate_hd5f(TARGET_X_DIM, TARGET_Y_DIM, num_all_frames, annotation_folder_
 	  mask[annotation_frame[label][1]:annotation_frame[label][3], annotation_frame[label][0]:annotation_frame[label][2]] = annotation_frame[label][-1]
 	#-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------  
 	# Color
-	#frame = Image.open(frame_path)
-	#enhancer = ImageEnhance.Contrast(frame)
-	#enhanced_image = enhancer.enhance(10)
-	#(height,width,ch) = enhanced_image.size
-	#greyscale_map = list(enhanced_image.getdata())
-	#greyscale_map = np.array(greyscale_map)
-	#print greyscale_map.shape
-	#greyscale_map = greyscale_map.reshape((height, width,ch))
-	#print greyscale_map.shape	
-	#print enhanced_image.size
-	#plt.figure
-	#plt.imshow(enhanced_image,cmap='gray')
-	#plt.show()
-	#exit(1)
+	if num_colors != 0:
+	  
+	  if color:
+	    frame_contrasted_set = np.zeros((num_colors,3,TARGET_Y_DIM,TARGET_X_DIM),dtype=np.float32)
+	  else:
+	    frame_contrasted_set = np.zeros((num_colors,1,TARGET_Y_DIM,TARGET_X_DIM),dtype=np.float32)
+	  mask_contrasted_set = np.zeros((num_colors,1,TARGET_MASK_Y_DIM,TARGET_MASK_X_DIM),dtype=np.float32)
+	  
+	  # resize mask here as it doesn't change afterwards
+	  mask_contrasted = cv2.resize(mask,(TARGET_MASK_X_DIM,TARGET_MASK_Y_DIM))
+	  mask_contrasted = mask_contrasted.astype(dtype=np.float32)
+	  
+	  # add the mask to the mask set
+	  mask_contrasted_set[:,0,:,:] = mask_contrasted
+	  
+	  for i in range(0,num_colors):
+	    
+	    # set random contrast parameters
+	    contrast_random_number = random.uniform(1,40)
+	    tile_random_number = random.randint(10,100)
+	    
+	    # apply contrast
+	    clahe = cv2.createCLAHE(clipLimit=contrast_random_number, tileGridSize=(tile_random_number,tile_random_number))
+	    
+	    # get the new contrrasted frame
+	    if color:
+	      frame_contrasted = np.zeros_like(frame)
+	      frame_contrasted[:,:,0] = clahe.apply(frame[:,:,0])
+	      frame_contrasted[:,:,1] = clahe.apply(frame[:,:,1])
+	      frame_contrasted[:,:,2] = clahe.apply(frame[:,:,2])
+	    else:
+	      frame_contrasted = clahe.apply(frame)
+	    
+	    # downsampling the frame
+	    frame_contrasted = cv2.resize(frame_contrasted,(TARGET_X_DIM,TARGET_Y_DIM))
+	    
+	    # cast to float32 for Caffe
+	    frame_contrasted = frame_contrasted.astype(dtype=np.float32) 
+	    
+	    # add the frame the set
+	    if color:
+	      frame_contrasted_set[i,0,:,:] = frame_contrasted[:,:,0]
+	      frame_contrasted_set[i,1,:,:] = frame_contrasted[:,:,1]
+	      frame_contrasted_set[i,2,:,:] = frame_contrasted[:,:,2]
+	    
+	    else: 
+	      frame_contrasted_set[i,0,:,:] = frame_contrasted
+   	    
+	# debugging after augmenting color is finished
+	if False:
+	  print "-------------------------------------------"
+	  print "CONTRAST augmentation"
+	  print "-Frame set shape", frame_contrasted_set.shape
+	  print "-Mask set shape", mask_contrasted_set.shape
+	  for i in range(0,num_colors):
+	    plt.figure
+	    if color:
+	      frame_debug = np.zeros((frame_contrasted_set.shape[2],frame_contrasted_set.shape[3],frame_contrasted_set.shape[1]))
+	      frame_debug[:,:,0] = frame_contrasted_set[i,0,:,:]
+	      frame_debug[:,:,1] = frame_contrasted_set[i,1,:,:]
+	      frame_debug[:,:,2] = frame_contrasted_set[i,2,:,:]
+	      
+	      plt.subplot(121)
+	      plt.imshow(frame_debug)
+	      
+	    else:
+	      frame_debug = frame_contrasted_set[i,0,:,:]
+	      plt.subplot(121)
+	      plt.imshow(frame_debug,cmap='gray')
+	      
+	    mask_debug = np.copy(mask_contrasted_set[i,0,:,:])
+	      
+	    plt.subplot(122)
+	    plt.imshow(mask_debug,cmap='gray')
+	    plt.show
+	    plt.pause(1)
 	#-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	
 	# Scaling
 	if num_scales != 0:
-	  frame_old = frame
-	  mask_old = mask
-	  original_height_frame, original_width_frame = frame.shape
-	  original_height_mask, original_width_mask = mask.shape
-	  print "-Frame Original height: {}, original width: {}".format(original_height_frame,original_width_frame)
-	  print "-Mask Original height: {}, original width: {}".format(original_height_mask,original_width_mask)
 	  
+	  if color:
+	    frame_scaled_set = np.zeros((num_scales,3,TARGET_Y_DIM,TARGET_X_DIM),dtype=np.float32)
+	  else:
+	    frame_scaled_set = np.zeros((num_scales,1,TARGET_Y_DIM,TARGET_X_DIM),dtype=np.float32)
+	    
+	  mask_scaled_set = np.zeros((num_scales,1,TARGET_MASK_Y_DIM,TARGET_MASK_X_DIM),dtype=np.float32)
+	 
+	  original_height_frame = frame.shape[0]
+	  original_width_frame = frame.shape[1]
+	  original_height_mask, original_width_mask = mask.shape
+  
 	  
 	  for i in range(0,num_scales):
 	    #------------------------------------------------------------------------------------
@@ -177,7 +248,9 @@ def generate_hd5f(TARGET_X_DIM, TARGET_Y_DIM, num_all_frames, annotation_folder_
 	    # random number between 1 and 10 for example
 	    random_number = random.uniform(1,5)
 	    frame_scaled = rescale(frame,random_number)
-	    scaled_height_frame, scaled_width_frame = frame_scaled.shape
+	   
+	    scaled_height_frame = frame_scaled.shape[0]
+	    scaled_width_frame = frame_scaled.shape[1]
 	    
 	    ## second crop
 	    start_row_frame = scaled_height_frame/2 - original_height_frame/2 
@@ -186,9 +259,6 @@ def generate_hd5f(TARGET_X_DIM, TARGET_Y_DIM, num_all_frames, annotation_folder_
 	    end_col_frame = scaled_width_frame/2 + original_width_frame/2
 	    
 	    frame_cropped = frame_scaled[start_row_frame:end_row_frame,start_col_frame:end_col_frame]
-	    frame_cropped_array = np.concatenate((frame_old,frame_cropped), axis=0)
-	   
-	    frame_old = frame_cropped_array
 	    #------------------------------------------------------------------------------------
 	    # Masks
 	    # first scale
@@ -202,62 +272,120 @@ def generate_hd5f(TARGET_X_DIM, TARGET_Y_DIM, num_all_frames, annotation_folder_
 	    end_col_mask = scaled_width_mask/2 + original_width_mask/2
 	    
 	    mask_cropped = mask_scaled[start_row_mask:end_row_mask,start_col_mask:end_col_mask]
-	    mask_cropped_array = np.concatenate((mask_old,mask_cropped), axis=0)
+	    
+	     # downsampling the frame and the mask
+	    frame_cropped = cv2.resize(frame_cropped,(TARGET_X_DIM,TARGET_Y_DIM))
+	    mask_cropped = cv2.resize(mask_cropped,(TARGET_X_DIM,TARGET_Y_DIM))
+	    
+	    # cast to float32 for Caffe
+	    frame_cropped = frame_cropped.astype(dtype=np.float32) 
+	    mask_cropped = mask_cropped.astype(dtype=np.float32)
+	    
+	    
+	    # adding cropped mask and frame to the sets
+	    if color:
+	      frame_scaled_set[i,0,:,:] = frame_cropped[:,:,0]
+	      frame_scaled_set[i,1,:,:] = frame_cropped[:,:,1]
+	      frame_scaled_set[i,2,:,:] = frame_cropped[:,:,2]
+	    
+	    else: 
+	      frame_scaled_set[i,0,:,:] = frame_cropped 
+	    mask_scaled_set[i,0,:,:] = mask_cropped
 	   
-	    mask_old = mask_cropped_array
-	    #------------------------------------------------------------------------------------
-	    # debugging
-	    if True:
-	      print "--------------------------"
-	      print "-Scale number: ", i+1
-	      print "-Scale factor: ", random_number
-	      print "\n-Frames"
-	      print "-Scaled height: {}, Scaled width: {}".format(scaled_height_frame,scaled_width_frame)
-	      print "-Cropped size ({},{})".format(end_row_frame-start_row_frame,end_col_frame-start_col_frame)
-	      print "\n-Masks"
-	      print "-Scaled height: {}, Scaled width: {}".format(scaled_height_mask,scaled_width_mask)
-	      print "-Cropped size ({},{})".format(end_row_mask-start_row_mask,end_col_mask-start_col_mask)
-	      print "Frame shape till now", frame_cropped_array.shape
-	      print "mask shape till now", mask_cropped_array.shape
-	      plt.figure
+	# debugging after scaling is finished
+	if False:
+	  print "-----------------------------------------"
+	  print "SCALE augmentation"
+	  print "-Frame set shape", frame_scaled_set.shape
+	  print "-Mask set shape", mask_scaled_set.shape
+	  for i in range(0,num_scales):
+	    plt.figure
+	    if color:
+	      frame_debug = np.zeros((frame_scaled_set.shape[2],frame_scaled_set.shape[3],frame_scaled_set.shape[1]))
+	      frame_debug[:,:,0] = frame_scaled_set[i,0,:,:]
+	      frame_debug[:,:,1] = frame_scaled_set[i,1,:,:]
+	      frame_debug[:,:,2] = frame_scaled_set[i,2,:,:]
+	      
 	      plt.subplot(121)
-	      plt.imshow(frame_cropped,cmap='gray')
-	      plt.subplot(122)
-	      plt.imshow(mask_cropped,cmap='gray')
-	      plt.show
-	      plt.pause(1)
-	    #------------------------------------------------------------------------------------
+	      plt.imshow(frame_debug)
+	      
+	    else:
+	      frame_debug = frame_scaled_set[i,0,:,:]
+	      plt.subplot(121)
+	      plt.imshow(frame_debug,cmap='gray')
+	      
+	    mask_debug = np.copy(mask_scaled_set[i,0,:,:])
+	      
+	    plt.subplot(122)
+	    plt.imshow(mask_debug,cmap='gray')
+	    plt.show
+	    plt.pause(1)	    
 	#-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	
 	# Rotation
 	if num_rotations != 0:
-	  frame_old = frame
-	  mask_old = mask
+	  
+	  if color:
+	    frame_rotated_set = np.zeros((num_rotations,3,TARGET_Y_DIM,TARGET_X_DIM),dtype=np.float32)
+	  else:
+	    frame_rotated_set = np.zeros((num_rotations,1,TARGET_Y_DIM,TARGET_X_DIM),dtype=np.float32)  
+	  mask_rotated_set = np.zeros((num_rotations,1,TARGET_MASK_Y_DIM,TARGET_MASK_X_DIM),dtype=np.float32)
+	  
+	  
 	  for i in range(0,num_rotations):	   
 	    random_number = random.uniform(1,360)
 	    frame_rot = rotate(frame,random_number)
-	    frame_rot_array = np.concatenate((frame_old,frame_rot), axis=0)
-	    frame_old = frame_rot_array
 	    
 	    mask_rot = mask
 	    mask_rot = rotate(mask_rot,random_number)
-	    mask_rot_array = np.concatenate((mask_old,mask_rot), axis=0)
-	    mask_old = mask_rot_array
 	    
-	    # debugging
-	    if True:
-	      print "--------------------------"
-	      print "-Rotation number: ", i+1
-	      print "-Rotation degree: ", random_number
-	      print "\n-Frame shape till now", frame_rot_array.shape
-	      print "\n-Mask shape till now", mask_rot_array.shape
-	      plt.figure
+	    # downsampling the frame and the mask
+	    frame_rot = cv2.resize(frame_rot,(TARGET_X_DIM,TARGET_Y_DIM))
+	    mask_rot = cv2.resize(mask_rot,(TARGET_X_DIM,TARGET_Y_DIM))
+	    
+	    # cast to float32 for Caffe
+	    frame_rot = frame_rot.astype(dtype=np.float32) 
+	    mask_rot = mask_rot.astype(dtype=np.float32)
+	    
+	    # adding rotated mask and frame to the sets
+	    if color:
+	      frame_rotated_set[i,0,:,:] = frame_rot[:,:,0]
+	      frame_rotated_set[i,1,:,:] = frame_rot[:,:,1]
+	      frame_rotated_set[i,2,:,:] = frame_rot[:,:,2]
+	    
+	    else: 
+	      frame_rotated_set[i,0,:,:] = frame_rot
+	    mask_rotated_set[i,0,:,:] = mask_rot
+	    
+	# debugging after rotation is finished
+	if False:
+	  print "-----------------------------------------"
+	  print "Rotation augmentation"
+	  print "-Frame set shape", frame_rotated_set.shape
+	  print "-Mask set shape", mask_rotated_set.shape
+	  for i in range(0,num_rotations):
+	    plt.figure
+	    if color:
+	      frame_debug = np.zeros((frame_rotated_set.shape[2],frame_rotated_set.shape[3],frame_rotated_set.shape[1]))
+	      frame_debug[:,:,0] = frame_rotated_set[i,0,:,:]
+	      frame_debug[:,:,1] = frame_rotated_set[i,1,:,:]
+	      frame_debug[:,:,2] = frame_rotated_set[i,2,:,:]
+	      
 	      plt.subplot(121)
-	      plt.imshow(frame_rot,cmap='gray')
-	      plt.subplot(122)
-	      plt.imshow(mask_rot,cmap='gray')
-	      plt.show
-	      plt.pause(1)
-	    
+	      plt.imshow(frame_debug)
+	      
+	    else:
+	      frame_debug = frame_rotated_set[i,0,:,:]
+	      plt.subplot(121)
+	      plt.imshow(frame_debug,cmap='gray')
+	      
+	    mask_debug = np.copy(mask_rotated_set[i,0,:,:])
+	      
+	    plt.subplot(122)
+	    plt.imshow(mask_debug,cmap='gray')
+	    plt.show
+	    plt.pause(1)
+	       
 	#-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	# plotting mask before downsampling (debugging)
 	if False:
@@ -286,50 +414,43 @@ def generate_hd5f(TARGET_X_DIM, TARGET_Y_DIM, num_all_frames, annotation_folder_
 	  print "-Mask shape after: ", mask.shape
 	
 	# cast to float32 for Caffe
-	mask_cp = mask.astype(dtype=np.float32)
-	frame_cp = frame.astype(dtype=np.float32) 
-      
-	# don't understand (why 0 ?)
-	if extract_shape:
-	  mask_cp[np.where(frame_cp>(extract_th-mean_value) )] = 0  # change max value to 1 !
+	mask = mask.astype(dtype=np.float32)
+	frame = frame.astype(dtype=np.float32) 
+	
+	# don't understand (why 0 ?) # (not implemented for the augmentation options)
+	#if extract_shape:
+	  #mask[np.where(frame>(extract_th-mean_value) )] = 0  # change max value to 1 !
 	 
 	# plotting mask after downsampling (debugging)
 	if False:
 	  plt.figure
-	  #plt.pcolor( net.blobs['data'].data[0,0,:,:])
-	  plt.imshow(mask_cp,cmap='gray')
+	  plt.imshow(mask,cmap='gray')
 	  plt.show
 	  plt.pause(2)
-
-	if do_plot:
-	  # if frames and masks have different shapes
-	  if frame.shape != mask.shape:
-	    mask_cp2 = mask_cp
-	    mask_cp2 = cv2.resize(mask_cp2,(TARGET_X_DIM,TARGET_Y_DIM))
-	    vis = np.concatenate((mask_cp2,frame),axis=1)
-	  else:
-	    # if frames and masks have same shapes
-	    vis = np.concatenate((mask_cp,frame),axis=1)
+	
+	
+	if False:
 	  plt.figure
-	  #plt.pcolor( net.blobs['data'].data[0,0,:,:])
-	  plt.imshow(mask_cp,cmap='gray')  
-	  plt.show
-	  plt.pause(2)
-	  
+	  plt.subplot(121)
+	  if color:
+	    plt.imshow(frame)
+	  else:
+	    plt.imshow(frame,cmap='gray')
+	  plt.subplot(122)
+	  plt.imshow(mask,cmap='gray')
+	  plt.show()
+	  plt.pause(1)
+	    
 	
 	# put the data of the current mask and frame in the label structure
 	if color:
-	  label_set[fid,0,:,:] = mask_cp[:,:,0]
-	  label_set[fid,1,:,:] = mask_cp[:,:,1]
-	  label_set[fid,2,:,:] = mask_cp[:,:,2]
-	  
-	  data_set[fid,0,:,:] = frame_cp[:,:,0]
-	  data_set[fid,1,:,:] = frame_cp[:,:,1]
-	  data_set[fid,2,:,:] = frame_cp[:,:,2]
+	  data_set[fid,0,:,:] = frame[:,:,0]
+	  data_set[fid,1,:,:] = frame[:,:,1]
+	  data_set[fid,2,:,:] = frame[:,:,2]
 	  
 	else:
-	  label_set[fid,0,:,:] = mask_cp
-	  data_set[fid,0,:,:] = frame_cp
+	  label_set[fid,0,:,:] = mask
+	  data_set[fid,0,:,:] = frame
 	
 	fid +=1
 	
@@ -349,7 +470,6 @@ def generate_hd5f(TARGET_X_DIM, TARGET_Y_DIM, num_all_frames, annotation_folder_
   print "| done"
 
   
-#if __name__ == "__main__":
-  #generate_hd5f()
-
-
+def update_data_label_arrays(frame, mask, data_set, label_set,index):
+  pass
+  
