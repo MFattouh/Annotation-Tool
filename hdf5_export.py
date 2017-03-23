@@ -442,17 +442,70 @@ def generate_hd5f(TARGET_X_DIM, TARGET_Y_DIM, num_all_frames, annotation_folder_
 	  plt.pause(1)
 	    
 	
-	# put the data of the current mask and frame in the label structure
+	# put the data and the mask in the sets
 	if color:
 	  data_set[fid,0,:,:] = frame[:,:,0]
 	  data_set[fid,1,:,:] = frame[:,:,1]
 	  data_set[fid,2,:,:] = frame[:,:,2]
+	  label_set[fid,0,:,:] = mask
+	  fid +=1
+	  
+	  #check rotation data
+	  if num_rotations!=0:
+	    data_set[fid:fid+num_rotations,0,:,:] = frame_rotated_set[:,0,:,:]
+	    data_set[fid:fid+num_rotations,1,:,:] = frame_rotated_set[:.1,:,:]
+	    data_set[fid:fid+num_rotations,2,:,:] = frame_rotated_set[:,2,:,:]
+	    
+	    label_set[fid:fid+num_rotations,0,:,:] = mask_rotated_set[:,0,:,:]
+	    fid += num_rotations
+	    
+	  #check scaled data
+	  if num_scales!=0:
+	    data_set[fid:fid+num_scales,0,:,:] = frame_scaled_set[:,0,:,:]
+	    data_set[fid:fid+num_scales,1,:,:] = frame_scaled_set[:.1,:,:]
+	    data_set[fid:fid+num_scales,2,:,:] = frame_scaled_set[:,2,:,:]
+	    
+	    label_set[fid:fid+num_scales,0,:,:] = mask_scaled_set[:,0,:,:]
+	    fid += num_scales
+	    
+	  #check contrast data
+	  if num_colors!=0:
+	    data_set[fid:fid+num_colors,0,:,:] = frame_contrasted_set[:,0,:,:]
+	    data_set[fid:fid+num_colors,1,:,:] = frame_contrasted_set[:.1,:,:]
+	    data_set[fid:fid+num_colors,2,:,:] = frame_contrasted_set[:,2,:,:]
+	    
+	    label_set[fid:fid+num_colors,0,:,:] = mask_contrasted_set[:,0,:,:]
+	    fid += num_colors
 	  
 	else:
-	  label_set[fid,0,:,:] = mask
 	  data_set[fid,0,:,:] = frame
+	  label_set[fid,0,:,:] = mask
+	  fid += 1
+	  
+	  #check rotation data
+	  if num_rotations !=0:
+	    data_set[fid:fid+num_rotations,0,:,:] = frame_rotated_set[:,0,:,:]
+	    label_set[fid:fid+num_rotations,0,:,:] = mask_rotated_set[:,0,:,:]
+	    fid += num_rotations
+	    
+	  #check scaled data
+	  if num_scales !=0:
+	    data_set[fid:fid+num_scales,0,:,:] = frame_scaled_set[:,0,:,:]
+	    label_set[fid:fid+num_scales,0,:,:] = mask_scaled_set[:,0,:,:]
+	    fid += num_scales
+	    
+	  #check contrast data
+	  if num_colors !=0:
+	    data_set[fid:fid+num_colors,0,:,:] = frame_contrasted_set[:,0,:,:]
+	    label_set[fid:fid+num_colors,0,:,:] = mask_contrasted_set[:,0,:,:]
+	    fid += num_colors
+	  
 	
-	fid +=1
+	  
+	  
+	
+	
+	
 	
 	
       elif annotation_frame == 0:
@@ -469,7 +522,4 @@ def generate_hd5f(TARGET_X_DIM, TARGET_Y_DIM, num_all_frames, annotation_folder_
   f.close()
   print "| done"
 
-  
-def update_data_label_arrays(frame, mask, data_set, label_set,index):
-  pass
-  
+
