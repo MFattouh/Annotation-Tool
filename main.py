@@ -189,7 +189,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	
 	# check box
 	self.show_mask_flag = tk.IntVar()
-	check_box_mask = tk.Checkbutton(self.annotation_options_label, text="Show masks only", variable=self.show_mask_flag, command=self.show_masks)
+	check_box_mask = tk.Checkbutton(self.annotation_options_label, text="Show labels only", variable=self.show_mask_flag, command=self.show_masks)
 	check_box_mask.place(x=0, y=250)
 	
 	#------------------------------------------------------------------------------------------------------------------------------------------#
@@ -341,24 +341,37 @@ class SampleApp(tk.Tk):  # inherit from Tk class
  
  
     def hdf5_export_fn(self):
+      num_scales = 0
+      num_rotations = 0 
+      num_colors = 0
       if self.rotation_rand_num.get() != "":
 	# check if it is a positive int digit
-	if self.rotation_rand_num.get().isdigit():
-	  print "Rotation random number", self.rotation_rand_num.get()
+	if not self.rotation_rand_num.get().isdigit():
+	  tkMessageBox.showinfo(title="Rotation number", message="Please enter an integer")
+	  return
+	else:
+	  num_rotations = int(self.rotation_rand_num.get())
 	  
       if self.color_rand_num.get() != "":
 	# check if it is a positive int digit
-	if self.color_rand_num.get().isdigit():
-	  print "Color random number", self.color_rand_num.get()
+	if not self.color_rand_num.get().isdigit():
+	  tkMessageBox.showinfo(title="Color number", message="Please enter an integer")
+	  return
+	else:
+	  num_colors = int(self.color_rand_num.get())
 	  
       if self.scale_rand_num.get() != "":
 	# check if it is a positive int digit
-	if self.scale_rand_num.get().isdigit():
-	  print "Scale random number", self.scale_rand_num.get()
-      
+	if not self.scale_rand_num.get().isdigit():
+	  tkMessageBox.showinfo(title="Scale number", message="Please enter an integer")
+	  return
+	else:
+	  num_scales = int(self.scale_rand_num.get())
+	  
       downsample_x = 300
       downsample_y = 300
-      generate_hd5f(downsample_x, downsample_y, self.total_num_of_frames, self.annotation_folder, self.frames_folder, self.output_folder)
+      
+      generate_hd5f(downsample_x, downsample_y, self.total_num_of_frames, self.annotation_folder, self.frames_folder, self.output_folder, num_scales=num_scales, num_colors=num_colors, num_rotations=num_rotations)
       tkMessageBox.showinfo(title="Info", message="HDF5 file exported !")
       
     def check_augmentation_boxes(self):

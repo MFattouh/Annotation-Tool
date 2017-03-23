@@ -6,10 +6,14 @@ import sys
 import os
 from skimage import io
 from skimage import color
+from skimage.transform import rotate
+from skimage.transform import rescale
 import glob
+import Image, ImageEnhance
+import random
+
 
 from compute_masks import load_annotationsations_from_file
-
 # script for downsampling and producing hd5f for frames(data) and the masks(labels)
 
 # debugging flags
@@ -45,7 +49,7 @@ def calculate_mean_all_frames(color, num_all_frames, frames_folder_path):
   return mean
 
 
-def generate_hd5f(TARGET_X_DIM, TARGET_Y_DIM, num_all_frames, annotation_folder_path, frames_folder_path, output_folder_path, color=False):
+def generate_hd5f(TARGET_X_DIM, TARGET_Y_DIM, num_all_frames, annotation_folder_path, frames_folder_path, output_folder_path, num_scales=0, num_rotations=0, num_colors=0, color=False):
   
   # calculate the mean over all pixels in all frames
   mean_value = calculate_mean_all_frames(color, num_all_frames, frames_folder_path)
@@ -75,7 +79,10 @@ def generate_hd5f(TARGET_X_DIM, TARGET_Y_DIM, num_all_frames, annotation_folder_
   print annotation_list_name
   print "Number of models", len(annotation_list_rectangle_pairs)
   print "Number of examples with annotations ", max_examples
- 
+  
+  # adding number of augmentations
+  max_examples = max_examples + num_rotations + num_colors + num_scales
+  
   # initialize structure for the data(frames) and the labels(masks) in hdf5 file 
   if color:
     colorstr = "_color"
@@ -111,7 +118,6 @@ def generate_hd5f(TARGET_X_DIM, TARGET_Y_DIM, num_all_frames, annotation_folder_
     print "--------------"
     print "-Video: {}\n".format(video_name) 
     for frame_number, annotation_frame in enumerate(annotation_video):
-      
       # ignore data if frame is not annotated or the frame doesn't exist but its annotation exists
       frame_name = video_name+ "_" + str(frame_number+1) + ".png"
       frame_path = os.path.join(frames_folder_path,frame_name)
@@ -121,7 +127,6 @@ def generate_hd5f(TARGET_X_DIM, TARGET_Y_DIM, num_all_frames, annotation_folder_
 	# read the frame to arrays
 	if color:
 	  frame = cv2.imread(frame_path)
-	  #mask = cv2.imread(mname)
 	  # mean substraction
 	  frame[:,:,0] = frame[:,:,0] - mean_value[0]
 	  frame[:,:,1] = frame[:,:,1] - mean_value[1]
@@ -129,7 +134,6 @@ def generate_hd5f(TARGET_X_DIM, TARGET_Y_DIM, num_all_frames, annotation_folder_
 	  
 	else:
 	  frame = cv2.imread(frame_path,0)
-	  #mask = cv2.imread(mname,0)
 	  # mean substraction
 	  frame[:,:] = frame[:,:] - mean_value[0]
 	 
@@ -138,8 +142,123 @@ def generate_hd5f(TARGET_X_DIM, TARGET_Y_DIM, num_all_frames, annotation_folder_
 	# creating the mask array for the current frame
 	# for each label in the current frame
 	for label in range(0,len(annotation_frame)):
-	   mask[annotation_frame[label][1]:annotation_frame[label][3], annotation_frame[label][0]:annotation_frame[label][2]] = annotation_frame[label][-1]
-	
+	  mask[annotation_frame[label][1]:annotation_frame[label][3], annotation_frame[label][0]:annotation_frame[label][2]] = annotation_frame[label][-1]
+	#-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------  
+	# Color
+	#frame = Image.open(frame_path)
+	#enhancer = ImageEnhance.Contrast(frame)
+	#enhanced_image = enhancer.enhance(10)
+	#(height,width,ch) = enhanced_image.size
+	#greyscale_map = list(enhanced_image.getdata())
+	#greyscale_map = np.array(greyscale_map)
+	#print greyscale_map.shape
+	#greyscale_map = greyscale_map.reshape((height, width,ch))
+	#print greyscale_map.shape	
+	#print enhanced_image.size
+	#plt.figure
+	#plt.imshow(enhanced_image,cmap='gray')
+	#plt.show()
+	#exit(1)
+	#-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	# Scaling
+	if num_scales != 0:
+	  frame_old = frame
+	  mask_old = mask
+	  original_height_frame, original_width_frame = frame.shape
+	  original_height_mask, original_width_mask = mask.shape
+	  print "-Frame Original height: {}, original width: {}".format(original_height_frame,original_width_frame)
+	  print "-Mask Original height: {}, original width: {}".format(original_height_mask,original_width_mask)
+	  
+	  
+	  for i in range(0,num_scales):
+	    #------------------------------------------------------------------------------------
+	    # Frames
+	    # first scale
+	    # random number between 1 and 10 for example
+	    random_number = random.uniform(1,5)
+	    frame_scaled = rescale(frame,random_number)
+	    scaled_height_frame, scaled_width_frame = frame_scaled.shape
+	    
+	    ## second crop
+	    start_row_frame = scaled_height_frame/2 - original_height_frame/2 
+	    end_row_frame = scaled_height_frame/2 + original_height_frame/2
+	    start_col_frame = scaled_width_frame/2 - original_width_frame/2
+	    end_col_frame = scaled_width_frame/2 + original_width_frame/2
+	    
+	    frame_cropped = frame_scaled[start_row_frame:end_row_frame,start_col_frame:end_col_frame]
+	    frame_cropped_array = np.concatenate((frame_old,frame_cropped), axis=0)
+	   
+	    frame_old = frame_cropped_array
+	    #------------------------------------------------------------------------------------
+	    # Masks
+	    # first scale
+	    mask_scaled = rescale(mask,random_number)
+	    scaled_height_mask, scaled_width_mask = mask_scaled.shape
+	    
+	    ## second crop
+	    start_row_mask = scaled_height_mask/2 - original_height_mask/2 
+	    end_row_mask = scaled_height_mask/2 + original_height_mask/2
+	    start_col_mask = scaled_width_mask/2 - original_width_mask/2
+	    end_col_mask = scaled_width_mask/2 + original_width_mask/2
+	    
+	    mask_cropped = mask_scaled[start_row_mask:end_row_mask,start_col_mask:end_col_mask]
+	    mask_cropped_array = np.concatenate((mask_old,mask_cropped), axis=0)
+	   
+	    mask_old = mask_cropped_array
+	    #------------------------------------------------------------------------------------
+	    # debugging
+	    if True:
+	      print "--------------------------"
+	      print "-Scale number: ", i+1
+	      print "-Scale factor: ", random_number
+	      print "\n-Frames"
+	      print "-Scaled height: {}, Scaled width: {}".format(scaled_height_frame,scaled_width_frame)
+	      print "-Cropped size ({},{})".format(end_row_frame-start_row_frame,end_col_frame-start_col_frame)
+	      print "\n-Masks"
+	      print "-Scaled height: {}, Scaled width: {}".format(scaled_height_mask,scaled_width_mask)
+	      print "-Cropped size ({},{})".format(end_row_mask-start_row_mask,end_col_mask-start_col_mask)
+	      print "Frame shape till now", frame_cropped_array.shape
+	      print "mask shape till now", mask_cropped_array.shape
+	      plt.figure
+	      plt.subplot(121)
+	      plt.imshow(frame_cropped,cmap='gray')
+	      plt.subplot(122)
+	      plt.imshow(mask_cropped,cmap='gray')
+	      plt.show
+	      plt.pause(1)
+	    #------------------------------------------------------------------------------------
+	#-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	# Rotation
+	if num_rotations != 0:
+	  frame_old = frame
+	  mask_old = mask
+	  for i in range(0,num_rotations):	   
+	    random_number = random.uniform(1,360)
+	    frame_rot = rotate(frame,random_number)
+	    frame_rot_array = np.concatenate((frame_old,frame_rot), axis=0)
+	    frame_old = frame_rot_array
+	    
+	    mask_rot = mask
+	    mask_rot = rotate(mask_rot,random_number)
+	    mask_rot_array = np.concatenate((mask_old,mask_rot), axis=0)
+	    mask_old = mask_rot_array
+	    
+	    # debugging
+	    if True:
+	      print "--------------------------"
+	      print "-Rotation number: ", i+1
+	      print "-Rotation degree: ", random_number
+	      print "\n-Frame shape till now", frame_rot_array.shape
+	      print "\n-Mask shape till now", mask_rot_array.shape
+	      plt.figure
+	      plt.subplot(121)
+	      plt.imshow(frame_rot,cmap='gray')
+	      plt.subplot(122)
+	      plt.imshow(mask_rot,cmap='gray')
+	      plt.show
+	      plt.pause(1)
+	    
+	#-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	# plotting mask before downsampling (debugging)
 	if False:
 	  plt.figure
@@ -148,7 +267,7 @@ def generate_hd5f(TARGET_X_DIM, TARGET_Y_DIM, num_all_frames, annotation_folder_
 	  plt.show
 	  plt.pause(1)
 	
-	
+	# debugging
 	# shapes of the frame and the mask before downsampling
 	if verbose:
 	  print "-----------------------------------------------------------------------------------------------"
@@ -213,6 +332,7 @@ def generate_hd5f(TARGET_X_DIM, TARGET_Y_DIM, num_all_frames, annotation_folder_
 	  data_set[fid,0,:,:] = frame_cp
 	
 	fid +=1
+	
 	
       elif annotation_frame == 0:
 	print "-----------------------------------------------------------------------------------------------"
