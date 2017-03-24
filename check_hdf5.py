@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
 # change the file path and the color flag if desired
-hdf5_folder = "/home/mohamed/Desktop/Opto/AnnotationTool/Pendulum/hdf5_files/"
-filename = hdf5_folder + "20170219_meansub_downsample_300x300_MASK_300x300.hdf5"
+hdf5_folder = "/home/mohamed/Desktop/Opto/AnnotationTool/Pendulum/masks/hdf5"
+filename = hdf5_folder + "/pendulum_test2_run01_camera02_fps_1.hdf5"
 color = False
 
 f=h5py.File(filename,"r")
@@ -58,11 +58,10 @@ for exp in range(0,examples):
     plt.subplot(122)
     plt.imshow(mask,cmap='gray')
     plt.show
-    plt.pause(0.5)
   
     if np.max(mask) != np.min(mask):
       print "-Object visible"
-      plt.pause(1)
+      plt.pause(0.5)
     else:
       print "-Object not visible"
 
@@ -120,6 +119,6 @@ for exp in range(0,examples):
     plt.show
 
     if np.max(mask) != np.min(mask):
-      plt.pause(1)
+      plt.pause(0.5)
 
 f.close()

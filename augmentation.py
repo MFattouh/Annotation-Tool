@@ -96,11 +96,10 @@ def augment(augment_flag, TARGET_X_DIM, TARGET_Y_DIM, num_all_frames, annotation
   if color:
     colorstr = "_color"
     data_set = np.zeros((max_examples,3,TARGET_Y_DIM,TARGET_X_DIM),dtype=np.float32)
-    label_set = np.zeros((max_examples,3,TARGET_MASK_Y_DIM,TARGET_MASK_X_DIM),dtype=np.float32)
   else:
     colorstr = ""
     data_set = np.zeros((max_examples,1,TARGET_Y_DIM,TARGET_X_DIM),dtype=np.float32)
-    label_set = np.zeros((max_examples,1,TARGET_MASK_Y_DIM,TARGET_MASK_X_DIM),dtype=np.float32)
+  label_set = np.zeros((max_examples,1,TARGET_MASK_Y_DIM,TARGET_MASK_X_DIM),dtype=np.float32)
   
   print "Data set size:" ,data_set.shape
   print "Label set size:", label_set.shape

@@ -17,7 +17,6 @@ from sklearn.feature_extraction import image # just another image processing lib
 import extract_patches	# for patch extraction?
 from extract_frames import extract_frames_from_videos # frame extraction function
 from extract_frames import get_video_file_name
-from compute_masks import create_masks_for_model # for creating the mask 
 from compute_masks import create_mask_for_image # mask for single image
 from augmentation import augment
 from export_data import export

@@ -1,6 +1,8 @@
 import os
 from scipy.misc import imsave
 import scipy.io
+import numpy as np
+import h5py  # HDF5 
 
 def export(output_folder, data_set, label_set, num_colors, num_scales, num_rotations, video_names_list, annotated_frames_list, type_data, color):
   
@@ -28,7 +30,7 @@ def export(output_folder, data_set, label_set, num_colors, num_scales, num_rotat
       os.makedirs(mat_folder_labels)
     
   if type_data == "hdf5":
-    hdf5_folder = os.path.join(mask_folder, "hd5f")
+    hdf5_folder = os.path.join(mask_folder, "hdf5")
     if not os.path.exists(hdf5_folder):
       os.makedirs(hdf5_folder)
  # ---------------------------1-------------------------------------------------------
@@ -42,15 +44,55 @@ def export(output_folder, data_set, label_set, num_colors, num_scales, num_rotat
   example_number = 0
   for index, (video_name,video_frames) in enumerate(zip(video_names_list, annotated_frames_list)):
     
-    if type_data == "image":
-      print "Writing png files to video:", video_name, "...",
-    elif type_data == "mat":
-      print "Writing mat files to video:", video_name, "...",
-    else:
-      print "Writing hdf5 file to video:", video_name, "...",
+    print "Writing {} files for video: {} ...".format(type_data,video_name),
     
-    for frame_index, frame in enumerate(video_frames):
+    # initialize some arrays for the hdf5
+    if type_data == "hdf5":
+      example_this_video = sum(video_frames)
+      row = data_set.shape[2]
+      col = data_set.shape[3]
       
+      if color:
+	hdf5_data_set = np.zeros((example_this_video,3,row,col),dtype=np.float32)
+	hdf5_label_set = np.zeros((example_this_video,1,row,col),dtype=np.float32)
+	index_original_data = 0
+	
+	if num_colors != 0:
+	  hdf5_data_color_set = np.zeros((num_colors*example_this_video,3,row,col),dtype=np.float32)
+	  hdf5_label_color_set = np.zeros((num_colors*example_this_video,1,row,col),dtype=np.float32)
+	  index_color_data = 0
+	  
+	if num_scales !=0:
+	  hdf5_data_scale_set = np.zeros((num_scales*example_this_video,3,row,col),dtype=np.float32)
+	  hdf5_label_scale_set = np.zeros((num_scales*example_this_video,1,row,col),dtype=np.float32)
+	  index_scale_data = 0
+	  
+	if num_rotations != 0:
+	  hdf5_data_rot_set = np.zeros((num_rotations*example_this_video,3,row,col),dtype=np.float32)
+	  hdf5_label_rot_set = np.zeros((num_rotations*example_this_video,1,row,col),dtype=np.float32)
+	  index_rot_data = 0
+	  
+      else:
+	hdf5_data_set = np.zeros((example_this_video,1,row,col),dtype=np.float32)
+	hdf5_label_set = np.zeros((example_this_video,1,row,col),dtype=np.float32)
+	index_original_data = 0
+	
+	if num_colors != 0:
+	  hdf5_data_color_set = np.zeros((num_colors*example_this_video,1,row,col),dtype=np.float32)
+	  hdf5_label_color_set = np.zeros((num_colors*example_this_video,1,row,col),dtype=np.float32)
+	  index_color_data = 0
+	  
+	if num_scales !=0:
+	  hdf5_data_scale_set = np.zeros((num_scales*example_this_video,1,row,col),dtype=np.float32)
+	  hdf5_label_scale_set = np.zeros((num_scales*example_this_video,1,row,col),dtype=np.float32)
+	  index_scale_data = 0
+	  
+	if num_rotations != 0:
+	  hdf5_data_rot_set = np.zeros((num_rotations*example_this_video,1,row,col),dtype=np.float32)
+	  hdf5_label_rot_set = np.zeros((num_rotations*example_this_video,1,row,col),dtype=np.float32)	
+	  index_rot_data = 0
+ 
+    for frame_index, frame in enumerate(video_frames):
       # save only if the frame is annotated
       if frame == 1:
 	#----------------------------------------------------------------------------------------------------------------------------------------
@@ -155,12 +197,107 @@ def export(output_folder, data_set, label_set, num_colors, num_scales, num_rotat
 	      scipy.io.savemat(mat_folder_labels+"/"+video_name+"_"+str(frame_index+1)+"_augment_rot_"+str(i+1)+".mat", mdict = {'MM': MM}, do_compression = True)
 	      example_number +=1	   
 	#----------------------------------------------------------------------------------------------------------------------------------------
-	
 	# save as hdf5 files
 	if type_data == "hdf5":
-	  pass
-	
+	  
+	  # save original data
+	  if color:
+	    hdf5_data_set[index_original_data,0:3,:,:] = data_set[example_number,0:3,:,:]
+	  else:
+	    hdf5_data_set[index_original_data,0,:,:] = data_set[example_number,0,:,:]
+	    
+	  # save original label
+	  hdf5_label_set[index_original_data,0,:,:] = label_set[example_number,0,:,:]
+	  index_original_data +=1
+	  example_number +=1
+	  
+	  # save color data if exists
+	  if num_colors!= 0 :
+	    if color:
+	      hdf5_data_color_set[index_color_data:index_color_data+num_colors,0:3,:,:] = data_set[example_number:example_number+num_colors,0:3,:,:]
+	    else:
+	      hdf5_data_color_set[index_color_data:index_color_data+num_colors,0,:,:] = data_set[example_number:example_number+num_colors,0,:,:]
+	    
+	    # save color label
+	    hdf5_label_color_set[index_color_data:index_color_data+num_colors,0,:,:] = label_set[example_number:example_number+num_colors,0,:,:]
+	    index_color_data = index_color_data + num_colors
+	    example_number = example_number + num_colors
+	  
+	  # save scale data if exists
+	  if num_scales!= 0 :
+	    if color:
+	      hdf5_data_scale_set[index_scale_data:index_scale_data+num_scales,0:3,:,:] = data_set[example_number:example_number+num_scales,0:3,:,:]
+	    else:
+	      hdf5_data_scale_set[index_scale_data:index_scale_data+num_scales,0,:,:] = data_set[example_number:example_number+num_scales,0,:,:]
+	    
+	    # save scale label
+	    hdf5_label_scale_set[index_scale_data:index_scale_data+num_scales,0,:,:] = label_set[example_number:example_number+num_scales,0,:,:]
+	    index_scale_data = index_scale_data + num_scales
+	    example_number = example_number + num_scales
+	    
 	  
 	  
+	  # save rotation data if exists
+	  if num_rotations!= 0 :
+	    if color:
+	      hdf5_data_rot_set[index_rot_data:index_rot_data+num_rotations,0:3,:,:] = data_set[example_number:example_number+num_rotations,0:3,:,:]
+	    else:
+	      hdf5_data_rot_set[index_rot_data:index_rot_data+num_rotations,0,:,:] = data_set[example_number:example_number+num_rotations,0,:,:]
+	    
+	    # save rotation label
+	    hdf5_label_rot_set[index_rot_data:index_rot_data+num_rotations,0,:,:] = label_set[example_number:example_number+num_rotations,0,:,:]	    
+	    index_rot_data = index_rot_data + num_rotations
+	    example_number = example_number + num_rotations
+	    
+    # writing hdf5 files
+    if type_data == "hdf5":
+      #original data
+      #print "\nOriginal"
+      #print hdf5_data_set.shape
+      #print hdf5_label_set.shape
+
+      f_name = hdf5_folder+"/"+video_name+".hdf5"
+      f = h5py.File(f_name,"w")
+
+      f.create_dataset("data", data= hdf5_data_set)
+      f.create_dataset("label", data= hdf5_label_set)   
+      f.close()
+      
+      if num_colors!=0:
+	# color data
+	#print "\ncolor"
+	#print hdf5_data_color_set.shape
+	#print hdf5_label_color_set.shape
+	f_name = hdf5_folder+"/"+video_name+"_color"+".hdf5"
+    
+	f = h5py.File(f_name,"w")
+	f.create_dataset("data", data= hdf5_data_color_set)
+	f.create_dataset("label", data= hdf5_label_color_set)   
+	f.close()
+
+      if num_scales!=0:
+	#print "\nscale"
+	#print hdf5_data_scale_set.shape
+	#print hdf5_label_scale_set.shape
+	# scale data
+	f_name = hdf5_folder+"/"+video_name+"_scale"+".hdf5"
+    
+	f = h5py.File(f_name,"w")
+	f.create_dataset("data", data= hdf5_data_scale_set)
+	f.create_dataset("label", data= hdf5_label_scale_set)   
+	f.close()    
+
+      if num_rotations!=0:
+	#print "\n Rot"
+	#print hdf5_data_rot_set.shape
+	#print hdf5_label_rot_set.shape	
+	# rotated data
+	f_name = hdf5_folder+"/"+video_name+"_rot"+".hdf5"
+    
+	f = h5py.File(f_name,"w")
+	f.create_dataset("data", data= hdf5_data_rot_set)
+	f.create_dataset("label", data= hdf5_label_rot_set)   
+	f.close()	
+      
     print "|done"	  
-	  	  
+		
