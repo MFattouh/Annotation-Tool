@@ -20,8 +20,9 @@ from extract_frames import get_video_file_name
 from compute_masks import create_masks_for_model # for creating the mask 
 from compute_masks import create_mask_for_image # mask for single image
 from augmentation import augment
+from export_data import export
 
-
+COLOR = False
 
 class SampleApp(tk.Tk):  # inherit from Tk class 
     '''Illustrate how to drag items on a Tkinter canvas'''
@@ -228,23 +229,24 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	# augment button
 	augment_btn = tk.Button(self.augmentation_frame, text="Augment", command=self.augment_data)
 	augment_btn.place(x=40, y=90)
+	self.augmentation_flag = 0
 	#-----------------------------------------------------------------------------------------------------------------------------------------#
 	# Export Frame
 	self.export_frame = tk.LabelFrame(self.canvas, text="Export data as:", padx=5, pady=5)
 	self.canvas.create_window(1110,170, anchor="nw", window=self.export_frame, width=170, height=50)
 	
 	# export hdf5 button
-	hdf5_export_btn = tk.Button(self.export_frame, text="HDF5", command=self.hdf5_export_fn, padx=5, pady=5)
+	hdf5_export_btn = tk.Button(self.export_frame, text="HDF5", command=lambda: self.export_fun("hdf5"), padx=5, pady=5)
 	hdf5_export_btn.configure(width= 4)
 	hdf5_export_btn.pack(side="right")
 	
 	# export images button
-	images_export_btn = tk.Button(self.export_frame, text = "PNG", command = lambda: self.create_mask("image"), padx=5, pady=5)
+	images_export_btn = tk.Button(self.export_frame, text = "PNG", command = lambda: self.export_fun("image"), padx=5, pady=5)
 	images_export_btn.configure(width= 4)
 	images_export_btn.pack(side="left")
 	
 	# export mat button
-	mat_export_btn = tk.Button(self.export_frame, text = "Mat", command = lambda: self.create_mask("mat"), padx=10, pady=5)
+	mat_export_btn = tk.Button(self.export_frame, text = "Mat", command = lambda: self.export_fun("mat"), padx=10, pady=5)
 	mat_export_btn.configure(width= 4)
 	mat_export_btn.pack(anchor="center")
 	
@@ -381,13 +383,25 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       downsample_x = 300
       downsample_y = 300
       
-      augment(downsample_x, downsample_y, self.total_num_of_frames, self.annotation_folder, self.frames_folder, self.output_folder, num_scales=num_scales, num_colors=num_colors, num_rotations=num_rotations)
+      self.data_set, self.label_set, self.num_colors, self.num_scales, self.num_rotations, self.video_names_list, self.annotated_frames_list, self.augmentation_flag = augment(self.augmentation_flag, 
+																	downsample_x, downsample_y, self.total_num_of_frames, self.annotation_folder, 
+																	self.frames_folder, self.output_folder, num_scales=num_scales, num_colors=num_colors, 
+																	num_rotations=num_rotations, color=COLOR)
+      
+      if self.augmentation_flag == -1:
+	self.augmentation_flag = 0
+	tkMessageBox.showinfo(title="Info", message="No annotation models exist")
+	return
+      
       tkMessageBox.showinfo(title="Info", message="Augmentation done !")
       
-    def hdf5_export_fn(self):
-     pass
-   
-    
+      
+    def export_fun(self,type_data):
+      if self.augmentation_flag == 0:
+	tkMessageBox.showinfo(title="Info",message="Augment data first")
+	return
+      
+      export(self.output_folder, self.data_set, self.label_set, self.num_colors, self.num_scales, self.num_rotations, self.video_names_list, self.annotated_frames_list, type_data, COLOR)
       
     def check_augmentation_boxes(self):
       if self.rotation.get():

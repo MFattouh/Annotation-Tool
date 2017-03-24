@@ -51,7 +51,7 @@ def calculate_mean_all_frames(color, num_all_frames, frames_folder_path):
   return mean
 
 
-def augment(TARGET_X_DIM, TARGET_Y_DIM, num_all_frames, annotation_folder_path, frames_folder_path, output_folder_path, num_scales=0, num_rotations=0, num_colors=0, color=False):
+def augment(augment_flag, TARGET_X_DIM, TARGET_Y_DIM, num_all_frames, annotation_folder_path, frames_folder_path, output_folder_path, num_scales=0, num_rotations=0, num_colors=0, color=False):
   
   # calculate the mean over all pixels in all frames
   mean_value = calculate_mean_all_frames(color, num_all_frames, frames_folder_path)
@@ -78,6 +78,11 @@ def augment(TARGET_X_DIM, TARGET_Y_DIM, num_all_frames, annotation_folder_path, 
     annotation_list_name.append(os.path.basename(annotation_path))
     max_examples += sum(1 for x in annotation_list_rectangle_pairs[i] if x != 0)
   
+  if len(annotation_list_rectangle_pairs) == 0:
+    augment_flag = -1
+  else:
+    augment_flag = 1
+  
   print annotation_list_name
   print "Number of models", len(annotation_list_rectangle_pairs)
   print "Number of examples with annotations ", max_examples
@@ -100,35 +105,31 @@ def augment(TARGET_X_DIM, TARGET_Y_DIM, num_all_frames, annotation_folder_path, 
   print "Data set size:" ,data_set.shape
   print "Label set size:", label_set.shape
   
-  # check if hdf5 folder exists
-  hdf5_folder = os.path.join(output_folder_path,"hdf5_files")
-  if not os.path.exists(hdf5_folder):
-    os.makedirs(hdf5_folder)
-    
-  # hdf5 file name
-  fname = hdf5_folder+"/20170219_meansub_downsample_"+str(TARGET_X_DIM)+"x"+str(TARGET_Y_DIM)+"_MASK_"+str(TARGET_MASK_X_DIM)+"x"+str(TARGET_MASK_Y_DIM)+colorstr+".hdf5"  
-  
-  # open hdf4 file to write
-  f=h5py.File(fname,"w")
-
   fid = 0
   
+  video_names_list = []
+  annotated_frames_list = []
+  
+ 
   # loop for each annotation model
   # downsample + putting data and label in the corresponding structures for hdf5 file
   print "---------------------- Begin Augmentation -------------------------"
   for index, (annotation_video,annotation_video_name) in enumerate(zip(annotation_list_rectangle_pairs,annotation_list_name)): 
-    
+    frames_annotated = []
     # add frames and masks to hdf5 if only both the frame and its annotation exists
     # otherwise u have a missing data (either the frame or its annotation)
     video_name = os.path.splitext(annotation_video_name)[0]
+    video_names_list.append(video_name)
     print "--------------"
     print "-Video: {}\n".format(video_name) 
     for frame_number, annotation_frame in enumerate(annotation_video):
+      
       # ignore data if frame is not annotated or the frame doesn't exist but its annotation exists
       frame_name = video_name+ "_" + str(frame_number+1) + ".png"
       frame_path = os.path.join(frames_folder_path,frame_name)
       
       if annotation_frame != 0 and os.path.exists(frame_path):
+	frames_annotated.append(1)
 	print "- Frame {} with label done".format(frame_number+1)
 	# read the frame to arrays
 	if color:
@@ -461,24 +462,6 @@ def augment(TARGET_X_DIM, TARGET_Y_DIM, num_all_frames, annotation_folder_path, 
 	  label_set[fid,0,:,:] = mask
 	  fid +=1
 	  
-	  #check rotation data
-	  if num_rotations!=0:
-	    data_set[fid:fid+num_rotations,0,:,:] = frame_rotated_set[:,0,:,:]
-	    data_set[fid:fid+num_rotations,1,:,:] = frame_rotated_set[:,1,:,:]
-	    data_set[fid:fid+num_rotations,2,:,:] = frame_rotated_set[:,2,:,:]
-	    
-	    label_set[fid:fid+num_rotations,0,:,:] = mask_rotated_set[:,0,:,:]
-	    fid += num_rotations
-	    
-	  #check scaled data
-	  if num_scales!=0:
-	    data_set[fid:fid+num_scales,0,:,:] = frame_scaled_set[:,0,:,:]
-	    data_set[fid:fid+num_scales,1,:,:] = frame_scaled_set[:,1,:,:]
-	    data_set[fid:fid+num_scales,2,:,:] = frame_scaled_set[:,2,:,:]
-	    
-	    label_set[fid:fid+num_scales,0,:,:] = mask_scaled_set[:,0,:,:]
-	    fid += num_scales
-	    
 	  #check contrast data
 	  if num_colors!=0:
 	    data_set[fid:fid+num_colors,0,:,:] = frame_contrasted_set[:,0,:,:]
@@ -488,42 +471,77 @@ def augment(TARGET_X_DIM, TARGET_Y_DIM, num_all_frames, annotation_folder_path, 
 	    label_set[fid:fid+num_colors,0,:,:] = mask_contrasted_set[:,0,:,:]
 	    fid += num_colors
 	  
+	  #check scaled data
+	  if num_scales!=0:
+	    data_set[fid:fid+num_scales,0,:,:] = frame_scaled_set[:,0,:,:]
+	    data_set[fid:fid+num_scales,1,:,:] = frame_scaled_set[:,1,:,:]
+	    data_set[fid:fid+num_scales,2,:,:] = frame_scaled_set[:,2,:,:]
+	    
+	    label_set[fid:fid+num_scales,0,:,:] = mask_scaled_set[:,0,:,:]
+	    fid += num_scales
+	    
+	  #check rotation data
+	  if num_rotations!=0:
+	    data_set[fid:fid+num_rotations,0,:,:] = frame_rotated_set[:,0,:,:]
+	    data_set[fid:fid+num_rotations,1,:,:] = frame_rotated_set[:,1,:,:]
+	    data_set[fid:fid+num_rotations,2,:,:] = frame_rotated_set[:,2,:,:]
+	    
+	    label_set[fid:fid+num_rotations,0,:,:] = mask_rotated_set[:,0,:,:]
+	    fid += num_rotations
+	    
 	else:
 	  data_set[fid,0,:,:] = frame
 	  label_set[fid,0,:,:] = mask
 	  fid += 1
 	  
-	  #check rotation data
-	  if num_rotations !=0:
-	    data_set[fid:fid+num_rotations,0,:,:] = frame_rotated_set[:,0,:,:]
-	    label_set[fid:fid+num_rotations,0,:,:] = mask_rotated_set[:,0,:,:]
-	    fid += num_rotations
-	    
-	  #check scaled data
-	  if num_scales !=0:
-	    data_set[fid:fid+num_scales,0,:,:] = frame_scaled_set[:,0,:,:]
-	    label_set[fid:fid+num_scales,0,:,:] = mask_scaled_set[:,0,:,:]
-	    fid += num_scales
-	    
 	  #check contrast data
 	  if num_colors !=0:
 	    data_set[fid:fid+num_colors,0,:,:] = frame_contrasted_set[:,0,:,:]
 	    label_set[fid:fid+num_colors,0,:,:] = mask_contrasted_set[:,0,:,:]
 	    fid += num_colors
 	  
+	  #check scaled data
+	  if num_scales !=0:
+	    data_set[fid:fid+num_scales,0,:,:] = frame_scaled_set[:,0,:,:]
+	    label_set[fid:fid+num_scales,0,:,:] = mask_scaled_set[:,0,:,:]
+	    fid += num_scales
+	    
+	  #check rotation data
+	  if num_rotations !=0:
+	    data_set[fid:fid+num_rotations,0,:,:] = frame_rotated_set[:,0,:,:]
+	    label_set[fid:fid+num_rotations,0,:,:] = mask_rotated_set[:,0,:,:]
+	    fid += num_rotations
+	      
 	
       elif annotation_frame == 0:
+	frames_annotated.append(0)
 	print "-----------------------------------------------------------------------------------------------"
 	print "-Warning: annotations for frame {} in video {} \n  don't exist... ignoring this data".format(frame_number+1,video_name)
 	print "-----------------------------------------------------------------------------------------------"
       elif not os.path.exists(frame_path):
+	frames_annotated.append(0)
 	print "-----------------------------------------------------------------------------------------------"
 	print "-Warning: frame {} for video {} doesn't exist\n  but annotations for it exist... ignoring this data".format(frame_number+1,video_name)
 	print "-----------------------------------------------------------------------------------------------"
-  print "\writing HDF file...",
-  f.create_dataset("data", data=data_set)
-  f.create_dataset("label", data=label_set)
-  f.close()
-  print "| done"
+    annotated_frames_list.append(frames_annotated)
+    
+ 
+  return data_set, label_set, num_colors, num_scales, num_rotations, video_names_list, annotated_frames_list, augment_flag
+  #print "\writing HDF file...",
+  ## check if hdf5 folder exists
+  #hdf5_folder = os.path.join(output_folder_path,"hdf5_files")
+  #if not os.path.exists(hdf5_folder):
+    #os.makedirs(hdf5_folder)
+    
+  ## hdf5 file name
+  #fname = hdf5_folder+"/20170219_meansub_downsample_"+str(TARGET_X_DIM)+"x"+str(TARGET_Y_DIM)+"_MASK_"+str(TARGET_MASK_X_DIM)+"x"+str(TARGET_MASK_Y_DIM)+colorstr+".hdf5"  
+  
+  ## open hdf4 file to write
+  #f=h5py.File(fname,"w")
+
+  #f.create_dataset("data", data=data_set)
+  #f.create_dataset("label", data=label_set)
+  #f.close()
+  #print "| done"
 
 
