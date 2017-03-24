@@ -39,26 +39,27 @@ for exp in range(0,examples):
     frame[:,:,0] = data[exp,0,:,:]
     frame[:,:,1] = data[exp,1,:,:]
     frame[:,:,2] = data[exp,2,:,:]
-    
-    mask[:,:,0]  = label[exp,0,:,:]
-    mask[:,:,1]  = label[exp,1,:,:]
-    mask[:,:,2]  = label[exp,2,:,:]
   else:
     frame = data[exp,0,:,:]
-    mask = label[exp,0,:,:]
+  mask = label[exp,0,:,:]
     
   print "-Data size:", frame.shape
   print "-Label size:", mask.shape
   
   if (data.shape[2]==label.shape[2]) and (data.shape[3]==label.shape[3]):
     plt.figure
-    vis = np.concatenate((mask,frame),axis=1)
-    #plt.imshow(mask,cmap='gray')
-    
-    # replace vis with mask if u want to see the mask (somehow the mask doesn't appear when concatenated with the frames)
-    plt.imshow(vis,cmap='gray')
+    if color: 
+      plt.subplot(121)
+      plt.imshow(frame)
+    else:
+      plt.subplot(121)
+      plt.imshow(frame,cmap='gray')
+      
+    plt.subplot(122)
+    plt.imshow(mask,cmap='gray')
     plt.show
-    
+    plt.pause(0.5)
+  
     if np.max(mask) != np.min(mask):
       print "-Object visible"
       plt.pause(1)

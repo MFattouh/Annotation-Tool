@@ -19,7 +19,7 @@ from extract_frames import extract_frames_from_videos # frame extraction functio
 from extract_frames import get_video_file_name
 from compute_masks import create_masks_for_model # for creating the mask 
 from compute_masks import create_mask_for_image # mask for single image
-from hdf5_export import generate_hd5f
+from augmentation import augment
 
 
 
@@ -44,38 +44,20 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         
 	# help menu bar
 	self.show_actions_flag = tk.IntVar()
+	self.about_flag = tk.IntVar()
 	
         helpmenu = tk.Menu(self.menubar, tearoff=0)
         self.menubar.add_cascade(label="Help", menu=helpmenu)
         helpmenu.add_checkbutton(label="Actions", variable=self.show_actions_flag, command=self.show_actions)
+        helpmenu.add_checkbutton(label="About", variable=self.about_flag, command=self.show_explaination)
         
         self.config(menu=self.menubar)
         
-	'''create buttons section'''
-	button2 = tk.Button(self.canvas, text = "Load annotations", command = self.load, anchor = "w")
-	button2.configure(width = 15)
-	button2.pack()
-	button2_window = self.canvas.create_window(100, 10, anchor="nw", window=button2)
-	
-	button3 = tk.Button(self.canvas, text = "Save annotations", command = self.save, anchor = "w")
-	button3.configure(width = 15)
-	button3.pack()
-	button3_window = self.canvas.create_window(100, 50, anchor="nw", window=button3)
-	
-	button4 = tk.Button(self.canvas, text = "Extract patches (all frames)", command = self.extract_patches, anchor = "w")
-	button4.configure(width = 27)
-	button4.pack()
-	button4_window = self.canvas.create_window(300, 50, anchor="nw", window=button4)
-
-        button5 = tk.Button(self.canvas, text = "Segment patches for current frame", command = self.extract_patches_tf, anchor = "w")
-        button5.configure(width = 27)
-        button5.pack()
-        button5_window = self.canvas.create_window(300, 10, anchor="nw", window=button5)
+	'''create Frames section'''
 	
 	# Video label window
 	self.video_info_label = tk.LabelFrame(self.canvas, text = "Video information", padx=5, pady=5)
-	self.video_info_label.pack()
-	self.canvas.create_window(800,320, anchor = "nw", window = self.video_info_label)
+	self.canvas.create_window(800,320, anchor = "nw", window = self.video_info_label, width=400, height=90)
 	tk.Label(self.video_info_label, text = "Video: No info").pack()
 	tk.Label(self.video_info_label, text = "Video: No info").pack()
 	
@@ -89,31 +71,40 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	
 	# Frame label window
 	self.frame_info_label = tk.LabelFrame(self.canvas, text="Frame information", padx=5, pady=5)
-	self.frame_info_label.pack()
-	self.canvas.create_window(800, 430, anchor="nw", window=self.frame_info_label)
+	self.canvas.create_window(800, 430, anchor="nw", window=self.frame_info_label, width=400, height=70)
 	tk.Label(self.frame_info_label, text="Frame: No info").pack()
 	tk.Label(self.frame_info_label, text="Frame: No info").pack()	
 	
-	# Annotation label window
+	#------------------------------------------------------------------------------------------------------------------------------------------#
+	# Annotation information frame
 	self.frame_annot_label = tk.LabelFrame(self.canvas, text="Annotation information", padx=5, pady=5)
-	self.frame_annot_label.pack()
-	self.canvas.create_window(800, 510, anchor="nw", window=self.frame_annot_label)
+	self.canvas.create_window(800, 510, anchor="nw", window=self.frame_annot_label, width=240, height=75)
 	tk.Label(self.frame_annot_label, text="Annotated frames: No info").pack()
 	
-	# Mask window
-	self.mask_label = tk.LabelFrame(self.canvas, text = "Create mask as:", padx = 5, pady =5)
-	self.mask_label.pack()
-	self.canvas.create_window(580,5, anchor = "nw", window = self.mask_label)
-	button7 = tk.Button(self.mask_label, text = "Images", command = lambda: self.create_mask("image"), anchor = "w")
-	button7.configure(width= 5)
-	button7.pack(side = tk.LEFT)
-	button8 = tk.Button(self.mask_label, text = "Mat", command = lambda: self.create_mask("mat"), anchor = "w")
-	button8.configure(width= 5)
-	button8.pack(side = tk.LEFT)
+	# load_btn
+	load_btn = tk.Button(self.frame_annot_label, text = "Load", command = self.load)
+	load_btn.pack(side="right",anchor="center")
 	
+	# save_btn
+	save_btn = tk.Button(self.frame_annot_label, text = "Save", command = self.save)
+	save_btn.pack(side="left")
+	#------------------------------------------------------------------------------------------------------------------------------------------#
+	# Patches frame
+	self.patches_frame = tk.LabelFrame(self.canvas, text="Extract patches per", padx=5, pady=5)
+	self.canvas.create_window(1110,235, anchor="nw", window=self.patches_frame, width=170, height=75)
+	
+	extract_patches_all_frames_btn = tk.Button(self.patches_frame, text = "Video", command = self.extract_patches)
+	extract_patches_all_frames_btn.config(width=5,height=2)
+	extract_patches_all_frames_btn.pack(side="right")
+	
+
+        extract_patches_this_frame_btn = tk.Button(self.patches_frame, text = "Frame", command = self.extract_patches_tf)
+        extract_patches_this_frame_btn.config(width=5,height=2)
+        extract_patches_this_frame_btn.pack(side="left")
+        
 	#------------------------------------------------------------------------------------------------------------------------------------------#
 	# Annotation options window 
-	self.annotation_options_label = tk.LabelFrame(self.canvas, text = "Annotation:", padx = 5, pady =5)
+	self.annotation_options_label = tk.LabelFrame(self.canvas, text = "Annotation options", padx = 5, pady =5)
 	self.canvas.create_window(800,10,anchor = "nw", window = self.annotation_options_label,width = 260,height = 300	)
 	
 	self.shape = tk.IntVar()
@@ -124,7 +115,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 					 value=0, variable=self.shape, command=self.get_shape).pack(side="left", anchor="nw")
 	radio_circle = tk.Radiobutton(self.annotation_options_label,text ="circle", 
 					 value=1, variable=self.shape, command=self.get_shape).pack(side="left", anchor="ne", padx=20)
-	#------------------------------------------------------------------------------------------------------------------------------------------#
+	#--------------------------
 	# rectangle frame
 	self.rectangle_frame = tk.LabelFrame(self.canvas, padx=5, pady=5)
 	self.canvas.create_window(810,55, anchor="nw", window=self.rectangle_frame, width=100, height=180)
@@ -134,8 +125,8 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	self.canvas.create_window(820,60, anchor="nw", window=self.rec_width_frame, width=80, height=80)
 	
 	# rectangle width button
-	button9 = tk.Button(self.rec_width_frame, text="width",command=lambda: self.rectangle_change_size(w_flag=True, ask=True), width=5)
-	button9.pack(side="top", anchor="nw")
+	rec_width_btn = tk.Button(self.rec_width_frame, text="width",command=lambda: self.rectangle_change_size(w_flag=True, ask=True), width=5)
+	rec_width_btn.pack(side="top", anchor="nw")
 	
 	# rectangle width slider
 	self.slider_rec_w = tk.Scale(self.rec_width_frame, orient=tk.HORIZONTAL, length=70, sliderlength=10, from_=1, to=640, command=lambda _:self.rectangle_change_size(w_flag=True))
@@ -146,26 +137,26 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	self.canvas.create_window(820,145, anchor="nw", window=self.rec_height_frame, width=80, height=80)
 	
 	# rectangle heigth button
-	button10 = tk.Button(self.rec_height_frame, text="height",command=lambda: self.rectangle_change_size(h_flag=True, ask=True), width=5)
-	button10.pack(side="top", anchor="n")
+	rec_height_btn = tk.Button(self.rec_height_frame, text="height",command=lambda: self.rectangle_change_size(h_flag=True, ask=True), width=5)
+	rec_height_btn.pack(side="top", anchor="n")
 	
 	# rectangle height slider
 	self.slider_rec_h = tk.Scale(self.rec_height_frame, orient=tk.VERTICAL, length=70, sliderlength=5, from_=1, to=480, command= lambda _:self.rectangle_change_size(h_flag = True))
 	self.slider_rec_h.pack(side="bottom", anchor="nw")
-	#------------------------------------------------------------------------------------------------------------------------------------------#
+	#----------------
 	# circle frame
 	self.circle_frame = tk.LabelFrame(self.canvas, padx=5, pady=5)
 	self.canvas.create_window(920,55, anchor = "nw", window = self.circle_frame, width = 80, height = 80)
 	
 	# circle radius button
-	button11 = tk.Button(self.circle_frame, text = "radius", width=5)
-	button11.pack(side="top",anchor="nw")
+	circle_rad_btn = tk.Button(self.circle_frame, text = "radius", width=5)
+	circle_rad_btn.pack(side="top",anchor="nw")
 	
 	# circle radius slider
 	self.slider_circle_r = tk.Scale(self.circle_frame, orient=tk.HORIZONTAL, length=70, sliderlength=10, from_=1, to=50)
 	self.slider_circle_r.pack(side= "bottom", anchor = "nw")
-	#------------------------------------------------------------------------------------------------------------------------------------------#
-	# Annotation labels frame
+	#-------------------
+	# labels frame
 	self.annotation_labels = tk.LabelFrame(self.canvas, text="Labels", padx=5, pady=5)
 	self.canvas.create_window(810,240, anchor="nw", window=self.annotation_labels, width=240, height=40)
 	
@@ -193,13 +184,9 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	check_box_mask.place(x=0, y=250)
 	
 	#------------------------------------------------------------------------------------------------------------------------------------------#
-	# HDF5 frame
-	self.hd5f_frame = tk.LabelFrame(self.canvas, text="HDF5", padx=5, pady=5)
-	self.canvas.create_window(1100,10, anchor="nw", window=self.hd5f_frame, width=200, height=170)
-	
 	# Augmentation frame
 	self.augmentation_frame = tk.LabelFrame(self.canvas, text="Augmentation")
-	self.canvas.create_window(1110, 28, anchor="nw", window=self.augmentation_frame, width=180, height=100)
+	self.canvas.create_window(1110, 10, anchor="nw", window=self.augmentation_frame, width=170, height=150)
 	
 	# aumentation options label
 	augmentation_options_label = tk.Label(self.augmentation_frame, text="Options")
@@ -220,7 +207,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	
 	# Random number label
 	random_number_label = tk.Label(self.augmentation_frame, text="# Random")
-	random_number_label.place(x=100)
+	random_number_label.place(x=90)
 	
 	
 	# Rotation entry
@@ -238,10 +225,29 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	self.scale_entry = tk.Entry(self.augmentation_frame, width=5, textvariable=self.scale_rand_num, state='disabled')
 	self.scale_entry.place(x=100, y=60)
 	
+	# augment button
+	augment_btn = tk.Button(self.augmentation_frame, text="Augment", command=self.augment_data)
+	augment_btn.place(x=40, y=90)
+	#-----------------------------------------------------------------------------------------------------------------------------------------#
+	# Export Frame
+	self.export_frame = tk.LabelFrame(self.canvas, text="Export data as:", padx=5, pady=5)
+	self.canvas.create_window(1110,170, anchor="nw", window=self.export_frame, width=170, height=50)
 	
 	# export hdf5 button
-	hdf5_export_btn = tk.Button(self.hd5f_frame, text="HDF5 export", command=self.hdf5_export_fn, padx=5, pady=5)
-	hdf5_export_btn.pack(side="bottom")
+	hdf5_export_btn = tk.Button(self.export_frame, text="HDF5", command=self.hdf5_export_fn, padx=5, pady=5)
+	hdf5_export_btn.configure(width= 4)
+	hdf5_export_btn.pack(side="right")
+	
+	# export images button
+	images_export_btn = tk.Button(self.export_frame, text = "PNG", command = lambda: self.create_mask("image"), padx=5, pady=5)
+	images_export_btn.configure(width= 4)
+	images_export_btn.pack(side="left")
+	
+	# export mat button
+	mat_export_btn = tk.Button(self.export_frame, text = "Mat", command = lambda: self.create_mask("mat"), padx=10, pady=5)
+	mat_export_btn.configure(width= 4)
+	mat_export_btn.pack(anchor="center")
+	
 	#------------------------------------------------------------------------------------------------------------------------------------------#
 	# Folder settings
 	
@@ -322,7 +328,12 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         self.img_num = 0
         self.load_frames(self.list_of_videos[self.video_index])
    
-   
+    def show_explaination(self):
+      if self.about_flag.get() == 1:
+	print "show information"
+      else:
+	print "remove information"
+      
     def show_masks(self):
       # don't show masks
       if self.show_mask_flag.get() == 0:
@@ -339,8 +350,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	self.canvas.itemconfig(self.img_id, image = self.curr_photo_image_mask_only)
 	self.canvas.itemconfig(self.polygon_id[0], tags='')
  
- 
-    def hdf5_export_fn(self):
+    def augment_data(self):
       num_scales = 0
       num_rotations = 0 
       num_colors = 0
@@ -371,8 +381,13 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       downsample_x = 300
       downsample_y = 300
       
-      generate_hd5f(downsample_x, downsample_y, self.total_num_of_frames, self.annotation_folder, self.frames_folder, self.output_folder, num_scales=num_scales, num_colors=num_colors, num_rotations=num_rotations)
-      tkMessageBox.showinfo(title="Info", message="HDF5 file exported !")
+      augment(downsample_x, downsample_y, self.total_num_of_frames, self.annotation_folder, self.frames_folder, self.output_folder, num_scales=num_scales, num_colors=num_colors, num_rotations=num_rotations)
+      tkMessageBox.showinfo(title="Info", message="Augmentation done !")
+      
+    def hdf5_export_fn(self):
+     pass
+   
+    
       
     def check_augmentation_boxes(self):
       if self.rotation.get():
@@ -402,8 +417,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       if self.show_actions_flag.get():
 	# Action label window
 	self.legend_label = tk.LabelFrame(self.canvas, text="Actions", padx=5, pady=5)
-	self.legend_label.pack()
-	self.canvas.create_window(800, 540, anchor="nw", window=self.legend_label)  
+	self.canvas.create_window(1100, 510, anchor="nw", window=self.legend_label,width=220, height=90)  
 	tk.Label(self.legend_label, text = "<--  Left \n --> Right \n ReturnKey <--| Annotate \n BackSpace < Delete Annotation ").pack()
       else:
 	self.legend_label.destroy()
@@ -657,7 +671,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       self.rectangle_frame_pairs = [0]*self.video_num_of_frames     
 	
       self.img_start_x = 100
-      self.img_start_y = 100
+      self.img_start_y = 70
       self.img_id = self.canvas.create_image(self.img_start_x, self.img_start_y, image = self.curr_photoimage, anchor="nw")
       
       # this data is used to keep track of an item being dragged
