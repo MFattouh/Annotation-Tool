@@ -527,11 +527,7 @@ def augment(augment_flag, TARGET_X_DIM, TARGET_Y_DIM, num_all_frames, annotation
     
  
   return data_set, label_set, num_colors, num_scales, num_rotations, video_names_list, annotated_frames_list, augment_flag
-  #print "\writing HDF file...",
-  ## check if hdf5 folder exists
-  #hdf5_folder = os.path.join(output_folder_path,"hdf5_files")
-  #if not os.path.exists(hdf5_folder):
-    #os.makedirs(hdf5_folder)
+
     
   ## hdf5 file name
   #fname = hdf5_folder+"/20170219_meansub_downsample_"+str(TARGET_X_DIM)+"x"+str(TARGET_Y_DIM)+"_MASK_"+str(TARGET_MASK_X_DIM)+"x"+str(TARGET_MASK_Y_DIM)+colorstr+".hdf5"  
