@@ -6,6 +6,8 @@ from PIL import Image
 import shutil
 import matplotlib.pyplot as plt
 
+
+# used for producing the image with only the labels when "show masks only" in the annotation tool is pressed
 def create_mask_for_image(image_array, image_annotation, label_number):
   image_height = image_array.shape[0]
   image_width = image_array.shape[1]
@@ -43,7 +45,8 @@ def create_mask_for_image(image_array, image_annotation, label_number):
       
   return image_array_only_mask 
         
-  
+
+# loads the annotation frames from the annotation file
 def load_annotationsations_from_file(file_name):
   f = file(file_name, 'rb')
   frame_rectangle_pairs = cPickle.load(f)

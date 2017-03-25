@@ -13,10 +13,9 @@ import Image, ImageEnhance
 import random
 import imutils
 import scipy.ndimage
-
-
 from compute_masks import load_annotationsations_from_file
-# script for downsampling and producing hd5f for frames(data) and the masks(labels)
+
+# script for augmenting the data(frames) and the labels(masks)
 
 # debugging flags
 do_plot = False
@@ -92,7 +91,7 @@ def augment(augment_flag, TARGET_X_DIM, TARGET_Y_DIM, num_all_frames, annotation
     max_examples = max_examples + max_examples * (num_rotations + num_colors + num_scales)
   
   
-  # initialize structure for the data(frames) and the labels(masks) in hdf5 file 
+  # initialize arrays for the data(frames) and the labels(masks)
   if color:
     colorstr = "_color"
     data_set = np.zeros((max_examples,3,TARGET_Y_DIM,TARGET_X_DIM),dtype=np.float32)
@@ -111,26 +110,24 @@ def augment(augment_flag, TARGET_X_DIM, TARGET_Y_DIM, num_all_frames, annotation
   
  
   # loop for each annotation model
-  # downsample + putting data and label in the corresponding structures for hdf5 file
+  # downsample + putting data and label to two big arrays
   print "---------------------- Begin Augmentation -------------------------"
   for index, (annotation_video,annotation_video_name) in enumerate(zip(annotation_list_rectangle_pairs,annotation_list_name)): 
     frames_annotated = []
-    # add frames and masks to hdf5 if only both the frame and its annotation exists
-    # otherwise u have a missing data (either the frame or its annotation)
     video_name = os.path.splitext(annotation_video_name)[0]
     video_names_list.append(video_name)
     print "--------------"
     print "-Video: {}\n".format(video_name) 
     for frame_number, annotation_frame in enumerate(annotation_video):
-      
-      # ignore data if frame is not annotated or the frame doesn't exist but its annotation exists
       frame_name = video_name+ "_" + str(frame_number+1) + ".png"
       frame_path = os.path.join(frames_folder_path,frame_name)
       
+      # ignore data if frame is not annotated or the frame doesn't exist but its annotation exists
       if annotation_frame != 0 and os.path.exists(frame_path):
 	frames_annotated.append(1)
 	print "- Frame {} with label done".format(frame_number+1)
-	# read the frame to arrays
+	
+	# read the frame image to an array
 	if color:
 	  frame = cv2.imread(frame_path)
 	  # mean substraction
@@ -149,11 +146,11 @@ def augment(augment_flag, TARGET_X_DIM, TARGET_Y_DIM, num_all_frames, annotation
 	mask = np.zeros((height,width))
 
 	# creating the mask array for the current frame
-	# for each label in the current frame
+	# for each label in the current frame 
 	for label in range(0,len(annotation_frame)):
 	  mask[annotation_frame[label][1]:annotation_frame[label][3], annotation_frame[label][0]:annotation_frame[label][2]] = annotation_frame[label][-1]
 	#-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------  
-	# Color
+	# 1- Color
 	if num_colors != 0:
 	  
 	  if color:
@@ -162,7 +159,7 @@ def augment(augment_flag, TARGET_X_DIM, TARGET_Y_DIM, num_all_frames, annotation
 	    frame_contrasted_set = np.zeros((num_colors,1,TARGET_Y_DIM,TARGET_X_DIM),dtype=np.float32)
 	  mask_contrasted_set = np.zeros((num_colors,1,TARGET_MASK_Y_DIM,TARGET_MASK_X_DIM),dtype=np.float32)
 	  
-	  # resize mask here as it doesn't change afterwards
+	  # downsample mask here as it doesn't change afterwards
 	  mask_contrasted = cv2.resize(mask,(TARGET_MASK_X_DIM,TARGET_MASK_Y_DIM))
 	  mask_contrasted = mask_contrasted.astype(dtype=np.float32)
 	  
@@ -171,14 +168,13 @@ def augment(augment_flag, TARGET_X_DIM, TARGET_Y_DIM, num_all_frames, annotation
 	  
 	  for i in range(0,num_colors):
 	    
-	    # set random contrast parameters
-	    contrast_random_number = random.uniform(1,40)
-	    tile_random_number = random.randint(10,100)
-	    
-	    # apply contrast
+	    # set random contrast parameters 
+	    contrast_random_number = random.uniform(1,40)  # random number from 1 to 40 (changeable)
+	    tile_random_number = random.randint(10,100) # random number from 10 to 100 (changeable)
+	   
 	    clahe = cv2.createCLAHE(clipLimit=contrast_random_number, tileGridSize=(tile_random_number,tile_random_number))
 	    
-	    # get the new contrrasted frame
+	    # APPLY CONRTAST 
 	    if color:
 	      frame_contrasted = np.zeros_like(frame)
 	      frame_contrasted[:,:,0] = clahe.apply(frame[:,:,0])
@@ -232,7 +228,7 @@ def augment(augment_flag, TARGET_X_DIM, TARGET_Y_DIM, num_all_frames, annotation
 	    plt.pause(1)
 	#-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	
-	# Scaling
+	# 2- Scaling
 	if num_scales != 0:
 	  
 	  if color:
@@ -274,7 +270,7 @@ def augment(augment_flag, TARGET_X_DIM, TARGET_Y_DIM, num_all_frames, annotation
 	    mask_scaled = scipy.ndimage.zoom(mask,random_number,order=3)
 	    
 	    scaled_height_mask, scaled_width_mask = mask_scaled.shape
-	    #exit(1)
+	    
 	    ## second crop
 	    start_row_mask = scaled_height_mask/2 - original_height_mask/2 
 	    end_row_mask = scaled_height_mask/2 + original_height_mask/2
@@ -332,7 +328,7 @@ def augment(augment_flag, TARGET_X_DIM, TARGET_Y_DIM, num_all_frames, annotation
 	    plt.pause(1)	    
 	#-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	
-	# Rotation
+	# 3- Rotation
 	if num_rotations != 0:
 	  
 	  if color:
@@ -526,17 +522,5 @@ def augment(augment_flag, TARGET_X_DIM, TARGET_Y_DIM, num_all_frames, annotation
     
  
   return data_set, label_set, num_colors, num_scales, num_rotations, video_names_list, annotated_frames_list, augment_flag
-
-    
-  ## hdf5 file name
-  #fname = hdf5_folder+"/20170219_meansub_downsample_"+str(TARGET_X_DIM)+"x"+str(TARGET_Y_DIM)+"_MASK_"+str(TARGET_MASK_X_DIM)+"x"+str(TARGET_MASK_Y_DIM)+colorstr+".hdf5"  
-  
-  ## open hdf4 file to write
-  #f=h5py.File(fname,"w")
-
-  #f.create_dataset("data", data=data_set)
-  #f.create_dataset("label", data=label_set)
-  #f.close()
-  #print "| done"
 
 

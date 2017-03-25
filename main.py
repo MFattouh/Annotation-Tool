@@ -14,7 +14,6 @@ import argparse # for the arguments passed
 import matplotlib.pyplot as plt
 from sklearn.feature_extraction import image # just another image processing lib
 
-import extract_patches	# for patch extraction?
 from extract_frames import extract_frames_from_videos # frame extraction function
 from extract_frames import get_video_file_name
 from compute_masks import create_mask_for_image # mask for single image
@@ -44,12 +43,11 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         
 	# help menu bar
 	self.show_actions_flag = tk.IntVar()
-	self.about_flag = tk.IntVar()
 	
         helpmenu = tk.Menu(self.menubar, tearoff=0)
         self.menubar.add_cascade(label="Help", menu=helpmenu)
         helpmenu.add_checkbutton(label="Actions", variable=self.show_actions_flag, command=self.show_actions)
-        helpmenu.add_checkbutton(label="About", variable=self.about_flag, command=self.show_explaination)
+
         
         self.config(menu=self.menubar)
         
@@ -329,11 +327,6 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         self.img_num = 0
         self.load_frames(self.list_of_videos[self.video_index])
    
-    def show_explaination(self):
-      if self.about_flag.get() == 1:
-	print "show information"
-      else:
-	print "remove information"
       
     def show_masks(self):
       # don't show masks
@@ -401,7 +394,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	return
       
       export(self.output_folder, self.data_set, self.label_set, self.num_colors, self.num_scales, self.num_rotations, self.video_names_list, self.annotated_frames_list, type_data, COLOR)
-      tkMessageBox.showinfo(titl="Info",message="Data exported !")
+      tkMessageBox.showinfo(title="Info",message="Data exported !")
       
     def check_augmentation_boxes(self):
       if self.rotation.get():
@@ -1006,8 +999,8 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       # don"t save if there is not at least one annotated frame
       number_of_annotaded_frames = sum([int(i !=0) for i in self.rectangle_frame_pairs])
       if number_of_annotaded_frames == 0:
-	tkMessageBox.showinfo(title = "Warning", message = "At least annotate one frame!")
-	return -1
+	tkMessageBox.showinfo(title = "Warning", message = "0 annotations!\nModel not saved!")
+	return 
       
       
       # check if there is already a model 
@@ -1058,8 +1051,8 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       save_annot = "no"
       save_annot = tkMessageBox.askquestion("End of video frames", "Save annotations?", icon = "warning")
       if save_annot == "yes":
-	if self.save() == -1:
-	  return
+	self.save()
+	
       else:
 	tkMessageBox.showinfo(title = "Info", message = "Annotation model not saved")
 	
@@ -1095,13 +1088,14 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       
     def rightKey(self, event):      
       self.img_num +=1 
-      if self.img_num >= self.video_num_of_frames:
+      
+      if self.img_num > self.video_num_of_frames-1:
 	
 	save_annot = "no"
 	save_annot = tkMessageBox.askquestion("End of video frames", "Save annotations?", icon = "warning")
 	if save_annot == "yes":
-	  if self.save() == -1:
-	    return
+	  self.save()
+	    
 	else:
 	  tkMessageBox.showinfo(title = "Info", message = "Annotation model not saved")
 	  
@@ -1131,13 +1125,14 @@ class SampleApp(tk.Tk):  # inherit from Tk class
     
     def leftKey(self, event):
       self.img_num -=1 
+      
       if self.img_num < 0: 
 	
 	save_annot = "no"
 	save_annot = tkMessageBox.askquestion("End of video frames", "Save annotations?", icon = "warning")
 	if save_annot == "yes":
-	  if self.save() == -1:
-	    return
+	  self.save()
+	    
 	else:
 	  tkMessageBox.showinfo(title = "Info", message = "Annotation model not saved")
 	  
@@ -1256,7 +1251,6 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	  
 	# load frames of the next video
 	self.load_frames(self.list_of_videos[self.video_index])
-	
       self.change_image()
       # update according to the label number selected
       if self.rectangle_frame_pairs[self.img_num] is not 0:

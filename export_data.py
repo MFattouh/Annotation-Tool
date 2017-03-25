@@ -91,7 +91,8 @@ def export(output_folder, data_set, label_set, num_colors, num_scales, num_rotat
 	  hdf5_data_rot_set = np.zeros((num_rotations*example_this_video,1,row,col),dtype=np.float32)
 	  hdf5_label_rot_set = np.zeros((num_rotations*example_this_video,1,row,col),dtype=np.float32)	
 	  index_rot_data = 0
- 
+    
+    # for each frame in the video
     for frame_index, frame in enumerate(video_frames):
       # save only if the frame is annotated
       if frame == 1:
