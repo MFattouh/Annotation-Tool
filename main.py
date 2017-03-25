@@ -401,6 +401,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	return
       
       export(self.output_folder, self.data_set, self.label_set, self.num_colors, self.num_scales, self.num_rotations, self.video_names_list, self.annotated_frames_list, type_data, COLOR)
+      tkMessageBox.showinfo(titl="Info",message="Data exported !")
       
     def check_augmentation_boxes(self):
       if self.rotation.get():
