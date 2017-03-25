@@ -1,24 +1,21 @@
-# Annotation Tool used for Deep Tracking
+- Annotation tool used for Deep Tracking
 
-Semi-manual video annotation tool based on correlation tracker.
-The correlation tracker works by combining filters for translation and scaling so it can detect the object at different sizes and
-different locations. It manages to mark the object in the clear situations but does not perform accurately in all cases.
+-Semi-manual video annotation tool based on correlation tracker.
 
-Please visit the project [web page](http://www.optophysiology.uni-freiburg.de/Research/Deep-Tracking) for more details.
+The correlation tracker works by combining filters for translation and scaling so it can detect the object at different sizes and different locations. It manages to mark the object in the clear situations but does not perform accurately in all cases.  
 
-[1] Shahbaz Khan Danelljan Haeger. Accurate scale estimation for robust visual tracking. In: BMVC (2014).
+-Please visit the project [web page](http://www.optophysiology.uni-freiburg.de/Research/Deep-Tracking) for more details.
 
-# HowTo use the tool
-Annotation of the data can be done by positioning a rectangle around the object to indicate the objects's location. 
-The annotation data is necessary to later train deep neural networks. (This way the network can be 'told' where the object is (supervised learning) in each training image).
+-[1] Shahbaz Khan Danelljan Haeger. Accurate scale estimation for robust visual tracking. In: BMVC (2014).
 
+----------------------------------------------------------------------------------------------------------------------------------------------------------------
+PS: Before you use this tool you should have already extracted frames for the videos of interest
+----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-# Work in Progress / Mohamed (2017)
-some modifications to the extract_frames.py and to the main.py. and compute_mask.py.
+- How to extract the frames for a video:
+----------------------------------------
 
-1- Usage of the main.py can be known if you type in the terminal ( python main.py -h )
-
-2- Usage : main.py -mf -v -fps -of
+* Usage of main.py can be known by typing "main.py -h" in the command line which has 5 arguments as follows:
 
  -mf: [path to the main folder that contains a folder named 'videos' (where the videos folder contains the video files and .txt files for the
 cuts of the videos, if the cut of a  video is not given then it will extract frames for the whole video)]  if the main folder is not passed then
@@ -28,57 +25,73 @@ default is current directory
 
  -fps: [frames per second, if not passed default fps =24]
 
- -of: [Output folder: folder containing the generated folders (patches, masks, frames ,etc). If not given then default is current directory ]
+ -of: [Output folder: folder containing the generated folders (patches, masks, frames, annotation). If not given then default is current directory ]
 
-3- you don't need to run the extract_frames.py  or compute_masks.py (they are called from the main.py)
+ -ff: [frames folder path: if passed then no frames extraction will take place]
 
-4- frames folder generated is something like this ---> (output_folder/frames/name_of_video/fps_number/frames_of_the_video )
+* frames are saved with respect to the video name and the frame number (e.g. if the video name is toys_camera01.avi with fps = 25 then for example frame number 6 will be saved as -> toys_camera01_25_6.png) 
+----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-5- I modified the GUI where I added a button to choose the DIRECTORY of the video frames to be annotated (e.g. output_folder/frames/name_of_video/fps_number/ )
-
-6- I also added a button to create a mask for the annotated frames if a model exists and checks if a mask is already created for this model
-
-6- Annotations are saved in output_folder/annotations/video_name_fps_number.model
-
-7-If there is an annotation model for the chosen video frames then it is automatically loaded after you load the frame directory from step 5
-
-8- Before saving the annotations I check for consistency of number of frames annotated with the number of frames of the video and I also check if there is already a saved model
-
-I attached the three scripts and you can try the program and give me a feedback (maybe the code in the main.py needs to be cleaned but I will do it later as I adjusted quite a few lines)
- 											--------------------------------------------------
-															21/2/2017
-Done:
-
-* change frames/video_name/fps/xxx.png  ----> frames/video_name_fps_xxx.png
-
-* load frames automaticaly and remove button to select the frames directory
-
-* added video label to tell which video and how many videos and video name
-
-* remove quit button
-
-* add two buttons to extract masks as images or mat files + delete old masks if they don't exists in the new annootation
-
-* load frames of the video u chose first
-
-* added entry to choose number of overlaps in the segmentation button
-
-*check if the annotated frames is outside the borders of the image and give a message to the user to keep the annotation inside the image borders
-
-* option to change the size of rectangle (default: width = 100, height = 50)
-
-* if rectangle size changed its center is centered with the image
-
-* added size of the rectangle to patches and segmentation folders (e.g. patches_pos_wxh/video_name_fps_#_xxx.png) where w -> width, h -> height
+- How to use the tool:
+----------------------
+	1- Annotation
+	2- Augmentation
+	3- Export
 
 
-* don't save annotation model if user didn't annotate at least one frame
+1- Annotation:
+--------------
+	*For each frame in the 'frames' folder do the following: place a rectangle (with adjustable length and height) on the object of interest (eg. a frog in an image) and press enter to annotate this data. 
 
-* added argument -ff (frame folder path) if the user doesn't want to extract any frames
+	*There is also the option that allows the annotation of multiple objects in one frame (up to 5 objects(classes))
+
+	*The annotation data is necessary to later train deep neural networks. (This way the network can be 'told' where the object is (supervised learning) in each training image).
+
+	*After you are finished with annotating the frames of interest in the video then you can save these annotations to a file which will be save in the 'annotation' folder
+
+	*Repeat the above steps for all the videos and then you are done with the annotation part
 
 
-------------------------------------------
-Still to do:
- - segmentation folder
- - patches positive and patches negative folders
+2- Augmentation:
+----------------
+	* The annotation step is a must before this step as it reads all the annotation files that are found in the 'annotation' folder.
+
+	* Data augmentation is useful when it comes to training deep neural networks so that the data do not over fit and it can generalize well.
+
+	* From the annotation files of each video, a mask is calculated representing the annotated object with its number (e.g. if a frog in an frame is annotated with a label = 2, then the mask will be 2's in the part where the frog is and 0's elsewhere)
+
+	* In the tool there are three options for your data(frames, masks): rotate, color and scale
+	
+	* You can then choose which options from these you want to apply to your data and how many times and press "Augment" (e.g rotate = 20; means that each annotated frame and its corresponding mask are rotated randomly 20 times) and then you end up with your original data + the augmented data
+	
+	* If no option is chosen then it simply produces the frames and their corresponding masks
+
+3- Export:
+----------
+	* After augmenting the data now you can export it either as images, mat or hdf5 files to be used as supervised learning data for training the network !
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+- Scripts functionality 
+-------------------
+
+* There are 5 scripts along with the main script which is responsible for the GUI part and calling functions from other scripts
+
+1- extract_frames.py: responsible for extracting the frames of the videos
+
+2- compute_masks.py: There is an option in the annotation tool "show masks only" that makes use of this script which shows the frame with only the annotated objects visible and the background is white
+
+3- check_hdf5.py: this is only used for debugging to check if the data written to the hdf5 files are correct (adjust the file path u want to read inside this script)
+
+4- augmentation.py: used for augmenting the data as explained above which checks if the user entered numbers for rotation, scale and color 
+NOTE VERY IMP: in the script, the order of checking of these options(rotation, scale and color) is important as they data is saved to one big numpy array and then the data in this array is used in the export_data.py and it generates the png ,mat or hdf5 files by checking for these options in the same order they were put in the array.
+
+5- export_data.py: responsible for generating png, mat or hdf5 files for the augmented data. Files produced from this script are saved according to the video name and frame number. (e.g for saving png file for frame number 2 with augmentation option scale = 20 for a video name "toys_camera01.avi" with fps = 25 ---> The frame name will be: toys_camera01_25_2_augment_scale_x.png ;  where x is a number from 1 to 20)
+
+
+
+
+
+
+
+
 
