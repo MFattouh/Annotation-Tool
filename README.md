@@ -1,5 +1,7 @@
 - Annotation tool used for Deep Tracking
 
+- Continuing on the work from https://github.com/stefanm91/annotation_tool
+
 -Semi-manual video annotation tool based on correlation tracker.
 
 The correlation tracker works by combining filters for translation and scaling so it can detect the object at different sizes and different locations. It manages to mark the object in the clear situations but does not perform accurately in all cases.  
