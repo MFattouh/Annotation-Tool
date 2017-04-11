@@ -256,7 +256,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         if args.main_folder is None:
 	  print "WARNING!! main folder path was not passed (default: current directory)"
 	else:
-	  main_folder += args.main_folder
+	  main_folder = args.main_folder
 	main_folder = os.path.abspath(main_folder) + "/"
 	# change directory to main folder
         os.chdir(main_folder)
@@ -266,7 +266,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 	if args.output_folder is None:
 	  print "WARNING!! output folder path was not passed (default: current directory)"
 	else:
-	  output_folder += args.output_folder
+	  output_folder = args.output_folder
 	output_folder = os.path.abspath(output_folder) + "/"
 	self.output_folder = output_folder
 	
@@ -292,7 +292,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         
         # frames folder
         if args.frames_folder is not None:
-	  frames_folder_path = current_dir + args.frames_folder
+	  frames_folder_path = args.frames_folder
 	  self.frames_folder = os.path.abspath(frames_folder_path) + "/"
 	  # check if the directory is empty
 	  if os.listdir(self.frames_folder) == []:
