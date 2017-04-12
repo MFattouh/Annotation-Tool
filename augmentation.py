@@ -509,15 +509,15 @@ def augment(augment_flag, TARGET_X_DIM, TARGET_Y_DIM, num_all_frames, annotation
 
 
           elif annotation_frame == 0:
-        frames_annotated.append(0)
-        print "-----------------------------------------------------------------------------------------------"
-        print "-Warning: annotations for frame {} in video {} \n  don't exist... ignoring this data".format(frame_number+1,video_name)
-        print "-----------------------------------------------------------------------------------------------"
+            frames_annotated.append(0)
+            print "-----------------------------------------------------------------------------------------------"
+            print "-Warning: annotations for frame {} in video {} \n  don't exist... ignoring this data".format(frame_number+1,video_name)
+            print "-----------------------------------------------------------------------------------------------"
           elif not os.path.exists(frame_path):
-        frames_annotated.append(0)
-        print "-----------------------------------------------------------------------------------------------"
-        print "-Warning: frame {} for video {} doesn't exist\n  but annotations for it exist... ignoring this data".format(frame_number+1,video_name)
-        print "-----------------------------------------------------------------------------------------------"
+            frames_annotated.append(0)
+            print "-----------------------------------------------------------------------------------------------"
+            print "-Warning: frame {} for video {} doesn't exist\n  but annotations for it exist... ignoring this data".format(frame_number+1,video_name)
+            print "-----------------------------------------------------------------------------------------------"
     annotated_frames_list.append(frames_annotated)
 
 

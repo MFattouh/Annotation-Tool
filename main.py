@@ -252,14 +252,14 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 
         # main folder
         current_dir = os.getcwd() + "/"
-            main_folder = current_dir
-            if args.main_folder is None:
+        main_folder = current_dir
+        if args.main_folder is None:
           print "WARNING!! main folder path was not passed (default: current directory)"
         else:
           main_folder = args.main_folder
         main_folder = os.path.abspath(main_folder) + "/"
         # change directory to main folder
-            os.chdir(main_folder)
+        os.chdir(main_folder)
 
         # output folder
         output_folder = current_dir

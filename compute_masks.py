@@ -32,8 +32,8 @@ def create_mask_for_image(image_array, image_annotation, label_number):
     # get the index of the label_number
     for i in range(0, number_of_annotations):
       if label_number == image_annotation[i][-1]:
-    label_number_index = i
-    break
+          label_number_index = i
+          break
 
     # check if the their is annotation for the given label_number
     if label_number_index == -1:

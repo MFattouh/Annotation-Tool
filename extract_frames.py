@@ -48,7 +48,7 @@ def extract_frames_from_one_video(video_file, frames_path, fps):
         shutil.copy2(os.path.join(new_path, "{0}.png".format(counter)), (frames_video_name_fps + "_{0}.png".format(images_counter)))
         images_counter += 1
         counter += 1
-          os.system("rm -R " + new_path)
+      os.system("rm -R " + new_path)
 
     else:
       with open(cut_video_file, "r") as ins:
