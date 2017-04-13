@@ -239,7 +239,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         #-----------------------------------------------------------------------------------------------------------------------------------------#
         # Export Frame
         self.export_frame = tk.LabelFrame(self.canvas, text="Export data as:", padx=5, pady=5)
-        self.canvas.create_window(1110,200, anchor="nw", window=self.export_frame, width=170, height=50)
+        self.canvas.create_window(1110,183, anchor="nw", window=self.export_frame, width=170, height=50)
 
         # export hdf5 button
         hdf5_export_btn = tk.Button(self.export_frame, text="HDF5", command=lambda: self.export_fun("hdf5"), padx=5, pady=5)
