@@ -184,7 +184,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         #------------------------------------------------------------------------------------------------------------------------------------------#
         # Augmentation frame
         self.augmentation_frame = tk.LabelFrame(self.canvas, text="Augmentation")
-        self.canvas.create_window(1110, 10, anchor="nw", window=self.augmentation_frame, width=170, height=150)
+        self.canvas.create_window(1110, 10, anchor="nw", window=self.augmentation_frame, width=170, height=170)
 
         # aumentation options label
         augmentation_options_label = tk.Label(self.augmentation_frame, text="Options")
@@ -202,6 +202,10 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         self.scale = tk.IntVar()
         check_box_3 = tk.Checkbutton(self.augmentation_frame,text="scale", variable=self.scale, command=self.check_augmentation_boxes)
         check_box_3.place(x=0, y=60)
+
+        self.bgcolor = tk.IntVar()
+        check_box_4 = tk.Checkbutton(self.augmentation_frame,text="bg subtraction", variable=self.bgcolor, command=self.check_augmentation_boxes)
+        check_box_4.place(x=0, y=80)
 
         # Random number label
         random_number_label = tk.Label(self.augmentation_frame, text="# Random")
@@ -223,14 +227,19 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         self.scale_entry = tk.Entry(self.augmentation_frame, width=5, textvariable=self.scale_rand_num, state='disabled')
         self.scale_entry.place(x=100, y=60)
 
+        # BG Color entry
+        self.bgcolor_rand_num = tk.StringVar()
+        self.bgcolor_entry = tk.Entry(self.augmentation_frame, width=5, textvariable=self.bgcolor_rand_num, state='disabled')
+        self.bgcolor_entry.place(x=100, y=80)
+
         # augment button
         augment_btn = tk.Button(self.augmentation_frame, text="Augment", command=self.augment_data)
-        augment_btn.place(x=40, y=90)
+        augment_btn.place(x=40, y=110)
         self.augmentation_flag = 0
         #-----------------------------------------------------------------------------------------------------------------------------------------#
         # Export Frame
         self.export_frame = tk.LabelFrame(self.canvas, text="Export data as:", padx=5, pady=5)
-        self.canvas.create_window(1110,170, anchor="nw", window=self.export_frame, width=170, height=50)
+        self.canvas.create_window(1110,200, anchor="nw", window=self.export_frame, width=170, height=50)
 
         # export hdf5 button
         hdf5_export_btn = tk.Button(self.export_frame, text="HDF5", command=lambda: self.export_fun("hdf5"), padx=5, pady=5)
@@ -414,6 +423,12 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       else:
         self.scale_entry.delete(0, tk.END)
         self.scale_entry.config(state='disabled')
+
+      if self.bgcolor.get():
+        self.bgcolor_entry.config(state='normal')
+      else:
+        self.bgcolor_entry.delete(0, tk.END)
+        self.bgcolor_entry.config(state='disabled')
       # return the focus to the canvas
       self.canvas.focus_set()
 
