@@ -4,6 +4,7 @@ import tkMessageBox # warning boxes
 import tkSimpleDialog # pop up window with entry
 import os              # system calls
 from PIL import ImageTk, Image # images in GUI and image processing
+from colorsys import rgb_to_hsv
 import dlib              # correlational tracker
 import glob        # some linux command functions
 import numpy as np    # matlab python stuff
@@ -1345,11 +1346,13 @@ class SampleApp(tk.Tk):  # inherit from Tk class
             #check if proper coordinates
             img = Image.fromarray(self.curr_image_raw, 'RGB')
             self.bgcolor_rgb = img.getpixel((relative_x, relative_y))
+            self.bgcolor_hsv = rgb_to_hsv(*self.bgcolor_rgb)
             self.bgcolor_hex = '#%02x%02x%02x' % self.bgcolor_rgb
             self.bgcolor_canvas.delete("all")
             self.bgcolor_canvas.create_rectangle(0, 0, 40, 20, fill= self.bgcolor_hex)
 
         self.canvas.unbind('<Button-1>')
+
 
 if __name__ == "__main__":
   parser = argparse.ArgumentParser(description = "Annotation Program")
