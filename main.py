@@ -204,8 +204,8 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         check_box_3.place(x=0, y=60)
 
         self.bgcolor = tk.IntVar()
-        check_box_4 = tk.Checkbutton(self.augmentation_frame,text="bg subtraction", variable=self.bgcolor, command=self.check_augmentation_boxes)
-        check_box_4.place(x=0, y=80)
+        self.bgcolor_check_box = tk.Checkbutton(self.augmentation_frame,text="bg subtraction", variable=self.bgcolor, command=self.check_augmentation_boxes)
+        self.bgcolor_check_box.place(x=0, y=80)
 
         # Random number label
         random_number_label = tk.Label(self.augmentation_frame, text="# Random")
@@ -227,10 +227,10 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         self.scale_entry = tk.Entry(self.augmentation_frame, width=5, textvariable=self.scale_rand_num, state='disabled')
         self.scale_entry.place(x=100, y=60)
 
-        # BG Color entry
+        # BG Color canvas
         self.bgcolor_rand_num = tk.StringVar()
-        self.bgcolor_entry = tk.Entry(self.augmentation_frame, width=5, textvariable=self.bgcolor_rand_num, state='disabled')
-        self.bgcolor_entry.place(x=100, y=80)
+        self.bgcolor_canvas = tk.Canvas(self.augmentation_frame, height = 20, width=40)
+        self.bgcolor_canvas.place(x=100, y=80)
 
         # augment button
         augment_btn = tk.Button(self.augmentation_frame, text="Augment", command=self.augment_data)
@@ -357,6 +357,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       num_scales = 0
       num_rotations = 0
       num_colors = 0
+      num_bgcolors = 0
       if self.rotation_rand_num.get() != "":
         # check if it is a positive int digit
         if not self.rotation_rand_num.get().isdigit():
@@ -380,6 +381,14 @@ class SampleApp(tk.Tk):  # inherit from Tk class
           return
         else:
           num_scales = int(self.scale_rand_num.get())
+
+    #   if self.bgcolor_rand_num.get() != "":
+    #     # check if it is a positive int digit
+    #     if not self.bgcolor_rand_num.get().isdigit():
+    #       tkMessageBox.showinfo(title="BG color", message="Please select bg color")
+    #       return
+    #     else:
+    #       num_bgcolors = int(self.bgcolor_rand_num.get())
 
       downsample_x = 300
       downsample_y = 300
@@ -425,10 +434,12 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         self.scale_entry.config(state='disabled')
 
       if self.bgcolor.get():
-        self.bgcolor_entry.config(state='normal')
+        # propt the user to select BG color
+        if tkMessageBox.showinfo(title="BG color", message="Please select bg color"):
+          self.canvas.bind('<Button-1>', self.OnPickColorCoord, add='+')
       else:
-        self.bgcolor_entry.delete(0, tk.END)
-        self.bgcolor_entry.config(state='disabled')
+        self.bgcolor_canvas.delete(0, tk.END)
+        self.bgcolor_canvas.config(state='disabled')
       # return the focus to the canvas
       self.canvas.focus_set()
 
@@ -553,7 +564,6 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 
     def circle_change_size(self):
       print "circle change size"
-
 
     def rectangle_change_size(self, w_flag = False, h_flag = False, ask = False, w=0, h=0, change_size = True):
 
@@ -1307,9 +1317,6 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         self._drag_data["x"] = event.x
         self._drag_data["y"] = event.y
 
-        # put item to front
-        #self.canvas.tag_raise(self._drag_data["item"]) ??
-
     def OnTokenButtonRelease(self, event):
         '''End drag of an object'''
         # reset the drag information
@@ -1330,6 +1337,28 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         # record the new position
         self._drag_data["x"] = event.x
         self._drag_data["y"] = event.y
+
+    def OnPickColorCoord(self, event):
+        '''Pick the background color coords'''
+        #check if clicked on the canvas
+        relative_x = event.x - self.img_start_x
+        relative_y = event.y - self.img_start_y
+        img_width = self.curr_photoimage.width()
+        img_height = self.curr_photoimage.height()
+        if (relative_x < 0 or relative_x >= img_width or
+          relative_y < 0 or relative_y >= img_height):
+            tkMessageBox.showerror(title="BG color", message="Please click on the image!")
+            self.bgcolor_canvas.config(state='disabled')
+            self.bgcolor_check_box.deselect()
+        else:
+            #check if proper coordinates
+            img = Image.fromarray(self.curr_image_raw, 'RGB')
+            self.bgcolor_rgb = img.getpixel((relative_x, relative_y))
+            self.bgcolor_hex = '#%02x%02x%02x' % self.bgcolor_rgb
+            self.bgcolor_canvas.delete("all")
+            self.bgcolor_canvas.create_rectangle(0, 0, 40, 20, fill= self.bgcolor_hex)
+
+        self.canvas.unbind('<Button-1>')
 
 if __name__ == "__main__":
   parser = argparse.ArgumentParser(description = "Annotation Program")
