@@ -357,7 +357,6 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       num_scales = 0
       num_rotations = 0
       num_colors = 0
-      num_bgcolors = 0
       if self.rotation_rand_num.get() != "":
         # check if it is a positive int digit
         if not self.rotation_rand_num.get().isdigit():
@@ -381,14 +380,6 @@ class SampleApp(tk.Tk):  # inherit from Tk class
           return
         else:
           num_scales = int(self.scale_rand_num.get())
-
-    #   if self.bgcolor_rand_num.get() != "":
-    #     # check if it is a positive int digit
-    #     if not self.bgcolor_rand_num.get().isdigit():
-    #       tkMessageBox.showinfo(title="BG color", message="Please select bg color")
-    #       return
-    #     else:
-    #       num_bgcolors = int(self.bgcolor_rand_num.get())
 
       downsample_x = 300
       downsample_y = 300
