@@ -13,7 +13,10 @@ import Image, ImageEnhance
 import random
 import imutils
 import scipy.ndimage
+from scipy.misc import imsave
 from compute_masks import load_annotationsations_from_file
+import Tkinter as tk
+import tkMessageBox # warning boxes
 
 # script for augmenting the data(frames) and the labels(masks)
 
@@ -23,6 +26,7 @@ verbose = False
 
 extract_shape = False  # threshold for white background
 extract_th    = 253    # Threshold
+
 
 # function to calculate the mean over all frames
 def calculate_mean_all_frames(color, num_all_frames, frames_folder_path):
@@ -50,7 +54,50 @@ def calculate_mean_all_frames(color, num_all_frames, frames_folder_path):
   return mean
 
 
-def augment(augment_flag, TARGET_X_DIM, TARGET_Y_DIM, num_all_frames, annotation_folder_path, frames_folder_path, output_folder_path, num_scales=0, num_rotations=0, num_colors=0, color=False):
+# function to subtract frames' background color and export
+def sub_bg_color(bg_color, frames_folder_path, sb_bg_folder_path):
+    for root, dirs, files in os.walk(frames_folder_path):
+        for frame_number, file in enumerate(files):
+            img = cv2.imread(os.path.join(frames_folder_path, file))
+            img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+            # subtract the hue value
+            img_hsv[:, :, 0] = img_hsv[:, :, 0] - bg_color*179
+            sub_img = cv2.cvtColor(img_hsv, cv2.COLOR_HSV2BGR)
+            imsave(os.path.join(sb_bg_folder_path, file), sub_img)
+            print "- Subtract bg color from frame {} done".format(frame_number+1)
+
+def augment(augment_flag, TARGET_X_DIM, TARGET_Y_DIM, num_all_frames,
+            annotation_folder_path, frames_folder_path, output_folder_path,
+            num_scales=0, num_rotations=0, num_colors=0,
+            bg_color=0, bg_sub=False, color=False):
+
+  # Subtract background color
+  if bg_sub:
+    print bg_color
+    sb_bg_folder_path = os.path.join(frames_folder_path, os.pardir, 'bg_sub')
+
+    if not os.path.exists(sb_bg_folder_path):
+        os.mkdirs(sb_bg_folder_path)
+        sub_bg_color(bg_color, frames_folder_path, sb_bg_folder_path)
+    else:
+        existing_frames = os.listdir(sb_bg_folder_path)
+        if existing_frames == []:
+            sub_bg_color(bg_color, frames_folder_path, sb_bg_folder_path)
+        else:
+            #These two lines get rid of tk root window
+            root = tk.Tk()
+            root.withdraw()
+            override = tkMessageBox.askyesno(title="Overwrite", message="The specified\
+ folder is not empty, do you want to overwrite it!", parent=root)
+            root.update()
+            root.destroy()
+            if override:
+                for file in existing_frames:
+                    try:
+                        os.remove(file)
+                    except:
+                        pass
+                sub_bg_color(bg_color, frames_folder_path, sb_bg_folder_path)
 
   # calculate the mean over all pixels in all frames
   mean_value = calculate_mean_all_frames(color, num_all_frames, frames_folder_path)

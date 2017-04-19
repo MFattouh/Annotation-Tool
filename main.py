@@ -358,6 +358,10 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       num_scales = 0
       num_rotations = 0
       num_colors = 0
+      if self.bgcolor.get():
+        bgcolor_h = self.bgcolor_hsv[0]
+      else:
+        bgcolor_h = 0
       if self.rotation_rand_num.get() != "":
         # check if it is a positive int digit
         if not self.rotation_rand_num.get().isdigit():
@@ -388,7 +392,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       self.data_set, self.label_set, self.num_colors, self.num_scales, self.num_rotations, self.video_names_list, self.annotated_frames_list, self.augmentation_flag = augment(self.augmentation_flag,
     downsample_x, downsample_y, self.total_num_of_frames, self.annotation_folder,
     self.frames_folder, self.output_folder, num_scales=num_scales, num_colors=num_colors,
-    num_rotations=num_rotations, color=COLOR)
+    num_rotations=num_rotations, bg_color=bgcolor_h, bg_sub=self.bgcolor.get(), color=COLOR)
 
       if self.augmentation_flag == -1:
         self.augmentation_flag = 0
