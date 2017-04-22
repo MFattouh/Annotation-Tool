@@ -4,7 +4,6 @@ import tkMessageBox # warning boxes
 import tkSimpleDialog # pop up window with entry
 import os              # system calls
 from PIL import ImageTk, Image # images in GUI and image processing
-from colorsys import rgb_to_hsv
 import dlib              # correlational tracker
 import glob        # some linux command functions
 import numpy as np    # matlab python stuff
@@ -229,7 +228,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         self.scale_entry.place(x=100, y=60)
 
         # BG Color canvas
-        self.bgcolor_rand_num = tk.StringVar()
+        self.bgcolor_rgb = []
         self.bgcolor_canvas = tk.Canvas(self.augmentation_frame, height = 20, width=40)
         self.bgcolor_canvas.place(x=100, y=80)
 
@@ -358,10 +357,12 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       num_scales = 0
       num_rotations = 0
       num_colors = 0
-      if self.bgcolor.get():
-        bgcolor_h = self.bgcolor_hsv[0]
-      else:
-        bgcolor_h = 0
+      if self.bgcolor.get() and self.bgcolor_rgb ==[]:
+        tkMessageBox.showerror(title="BG Color",
+                               message="choose background color first!")
+        self.bgcolor_check_box.deselect()
+        return None
+
       if self.rotation_rand_num.get() != "":
         # check if it is a positive int digit
         if not self.rotation_rand_num.get().isdigit():
@@ -392,7 +393,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       self.data_set, self.label_set, self.num_colors, self.num_scales, self.num_rotations, self.video_names_list, self.annotated_frames_list, self.augmentation_flag = augment(self.augmentation_flag,
     downsample_x, downsample_y, self.total_num_of_frames, self.annotation_folder,
     self.frames_folder, self.output_folder, num_scales=num_scales, num_colors=num_colors,
-    num_rotations=num_rotations, bg_color=bgcolor_h, bg_sub=self.bgcolor.get(), color=COLOR)
+    num_rotations=num_rotations, bg_color=self.bgcolor_rgb, bg_sub=self.bgcolor.get(), color=COLOR)
 
       if self.augmentation_flag == -1:
         self.augmentation_flag = 0
@@ -430,11 +431,13 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         self.scale_entry.config(state='disabled')
 
       if self.bgcolor.get():
-        # propt the user to select BG color
-        if tkMessageBox.showinfo(title="BG color", message="Please select bg color"):
-          self.canvas.bind('<Button-1>', self.OnPickColorCoord, add='+')
+          if self.bgcolor_rgb == []:
+              # ask user to select BG color
+                if tkMessageBox.showinfo(title="BG color", message="Please select bg color"):
+                    self.canvas.bind('<Button-1>', self.OnPickColorCoord, add='+')
       else:
-        self.bgcolor_canvas.delete(0, tk.END)
+        self.bgcolor_rgb = []
+        self.bgcolor_canvas.delete("all")
         self.bgcolor_canvas.config(state='disabled')
       # return the focus to the canvas
       self.canvas.focus_set()
@@ -1341,18 +1344,10 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         relative_y = event.y - self.img_start_y
         img_width = self.curr_photoimage.width()
         img_height = self.curr_photoimage.height()
-        if (relative_x < 0 or relative_x >= img_width or
-          relative_y < 0 or relative_y >= img_height):
-            tkMessageBox.showerror(title="BG color", message="Please click on the image!")
-            self.bgcolor_canvas.config(state='disabled')
-            self.bgcolor_check_box.deselect()
-        else:
-            #check if proper coordinates
-            self.bgcolor_rgb = tuple(self.curr_image_raw[relative_y, relative_x].tolist())
-            self.bgcolor_hsv = rgb_to_hsv(*self.bgcolor_rgb)
-            self.bgcolor_hex = '#%02x%02x%02x' % self.bgcolor_rgb
-            self.bgcolor_canvas.delete("all")
-            self.bgcolor_canvas.create_rectangle(0, 0, 40, 20, fill= self.bgcolor_hex)
+        self.bgcolor_rgb = self.curr_image_raw[relative_y, relative_x].tolist()
+        bgcolor_hex = '#%02x%02x%02x' % tuple(self.bgcolor_rgb)
+        self.bgcolor_canvas.delete("all")
+        self.bgcolor_canvas.create_rectangle(0, 0, 40, 20, fill= bgcolor_hex)
 
         self.canvas.unbind('<Button-1>')
 

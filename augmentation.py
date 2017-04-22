@@ -56,24 +56,34 @@ def calculate_mean_all_frames(color, num_all_frames, frames_folder_path):
 
 # function to subtract frames' background color and export
 def sub_bg_color(bg_color, frames_folder_path, sb_bg_folder_path):
+    np_color = np.zeros((1, 1, 3), dtype='uint8')
+    np_color[0, 0, :] = bg_color
+    bg_color_hsv = cv2.cvtColor(np_color, cv2.COLOR_RGB2HSV)
+    bg_color_hue = bg_color_hsv[0, 0, 0]
+    sensitivity = 10
+    lower = bg_color_hue - sensitivity if bg_color_hue - sensitivity > -1 else 0
+    upper = bg_color_hue + sensitivity if bg_color_hue + sensitivity < 180 else 180
     for root, dirs, files in os.walk(frames_folder_path):
         for frame_number, file in enumerate(files):
             img = cv2.imread(os.path.join(frames_folder_path, file))
             img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-            # subtract the hue value
-            img_hsv[:, :, 0] = img_hsv[:, :, 0] - bg_color*179
-            sub_img = cv2.cvtColor(img_hsv, cv2.COLOR_HSV2BGR)
-            imsave(os.path.join(sb_bg_folder_path, file), sub_img)
+            # create background mask
+            mask = cv2.inRange(img_hsv[:, :, 0], lower, upper)
+            mask = cv2.bitwise_not(mask)
+            output = cv2.bitwise_and(img, img, mask=mask)
+            cv2.imwrite(os.path.join(sb_bg_folder_path, file), output)
+            cv2.imwrite(os.path.join(sb_bg_folder_path, 'mask_'+file), mask)
             print "- Subtract bg color from frame {} done".format(frame_number+1)
 
 def augment(augment_flag, TARGET_X_DIM, TARGET_Y_DIM, num_all_frames,
             annotation_folder_path, frames_folder_path, output_folder_path,
-            num_scales=0, num_rotations=0, num_colors=0,
-            bg_color=0, bg_sub=False, color=False):
+            num_scales=0, num_rotations=0, num_colors=0, bg_color=[0, 0, 0],
+            bg_sub=False, color=False):
 
   # Subtract background color
   sb_bg_folder_path = os.path.join(frames_folder_path, os.pardir, '.bg_sub')
   if bg_sub:
+    print 'recieved bgcolor: ', bg_color
     if not os.path.exists(sb_bg_folder_path):
         os.makedirs(sb_bg_folder_path)
 
@@ -549,7 +559,7 @@ def augment(augment_flag, TARGET_X_DIM, TARGET_Y_DIM, num_all_frames,
     annotated_frames_list.append(frames_annotated)
 
   # remove directory of background subtracted images if exists
-  if bg_sub:
-    rmtree(sb_bg_folder_path)
+  # if bg_sub:
+    # rmtree(sb_bg_folder_path)
 
   return data_set, label_set, num_colors, num_scales, num_rotations, video_names_list, annotated_frames_list, augment_flag
