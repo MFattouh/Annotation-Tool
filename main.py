@@ -13,6 +13,7 @@ import time
 import argparse # for the arguments passed
 import matplotlib.pyplot as plt
 from sklearn.feature_extraction import image # just another image processing lib
+from cv2 import imread
 
 from extract_frames import extract_frames_from_videos # frame extraction function
 from extract_frames import get_video_file_name
@@ -209,7 +210,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 
         self.custom_bg = tk.IntVar()
         self.custom_bg_filename = ''
-        self.custom_bg_check_box = tk.Checkbutton(self.augmentation_frame, text="custom bg", variable=self.custom_bg, command=self.check_augmentation_boxes)
+        self.custom_bg_check_box = tk.Checkbutton(self.augmentation_frame, text="custom bg", variable=self.custom_bg, command=self.check_augmentation_boxes,state='disabled')
         self.custom_bg_check_box.place(x=0, y=100)
 
         # Random number label
@@ -238,7 +239,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 
         # Cutom background button
         self.custom_bg_btn = tk.Button(self.augmentation_frame, text="bg", command=self.add_custom_bg, padx=5, pady=3)
-        self.custom_bg_btn.config(width=4)
+        self.custom_bg_btn.config(width=4, state='disabled')
         self.custom_bg_btn.place(x=100, y=100)
 
         # augment button
@@ -440,14 +441,25 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         self.scale_entry.config(state='disabled')
 
       if self.bgcolor.get():
-          if self.bgcolor_rgb == []:
-              # ask user to select BG color
-                if tkMessageBox.showinfo(title="BG color", message="Please select bg color"):
-                    self.canvas.bind('<Button-1>', self.OnPickColorCoord, add='+')
+        if self.bgcolor_rgb == []:
+            # ask user to select BG color
+            if tkMessageBox.showinfo(title="BG color", message="Please select bg color"):
+                self.canvas.bind('<Button-1>', self.OnPickColorCoord, add='+')
+        self.custom_bg_check_box.config(state='normal')
       else:
         self.bgcolor_rgb = []
         self.bgcolor_canvas.delete("all")
         self.bgcolor_canvas.config(state='disabled')
+        self.custom_bg_check_box.config(state='disabled')
+        self.custom_bg_check_box.deselect()
+        self.custom_bg_btn.config(state='disabled')
+
+      if self.custom_bg.get():
+        self.custom_bg_btn.config(state='normal')
+      else:
+        self.custom_bg_btn.config(state='disabled')
+        self.custom_bg_filename = ''
+
       # return the focus to the canvas
       self.canvas.focus_set()
 
@@ -1365,10 +1377,16 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         options['defaultextension'] = '.*'
         options['filetypes'] = [('image files', '.*')]
         options['initialdir'] = '.'
-        options['initialfile'] = 'background_image.*'
+        options['initialfile'] = ''
         options['parent'] = self.canvas
         options['title'] = 'Select Background'
         self.custom_bg_filename = tkFileDialog.askopenfilename(**options)
+        bg_image = imread(self.custom_bg_filename)
+        if bg_image is None:
+            tkMessageBox.showerror(title='Bad file',
+                                   message='Can not open the selected file')
+            self.custom_bg_check_box.deselect()
+            self.check_augmentation_boxes()
 
 if __name__ == "__main__":
   parser = argparse.ArgumentParser(description = "Annotation Program")
