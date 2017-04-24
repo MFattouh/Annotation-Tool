@@ -208,6 +208,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         self.bgcolor_check_box.place(x=0, y=80)
 
         self.custom_bg = tk.IntVar()
+        self.custom_bg_filename = ''
         self.custom_bg_check_box = tk.Checkbutton(self.augmentation_frame, text="custom bg", variable=self.custom_bg, command=self.check_augmentation_boxes)
         self.custom_bg_check_box.place(x=0, y=100)
 
@@ -1360,7 +1361,14 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         self.canvas.unbind('<Button-1>')
 
     def add_custom_bg(self):
-        pass
+        options = {}
+        options['defaultextension'] = '.*'
+        options['filetypes'] = [('image files', '.*')]
+        options['initialdir'] = '.'
+        options['initialfile'] = 'background_image.*'
+        options['parent'] = self.canvas
+        options['title'] = 'Select Background'
+        self.custom_bg_filename = tkFileDialog.askopenfilename(**options)
 
 if __name__ == "__main__":
   parser = argparse.ArgumentParser(description = "Annotation Program")
