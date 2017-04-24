@@ -89,7 +89,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         #------------------------------------------------------------------------------------------------------------------------------------------#
         # Patches frame
         self.patches_frame = tk.LabelFrame(self.canvas, text="Extract patches per", padx=5, pady=5)
-        self.canvas.create_window(1110,235, anchor="nw", window=self.patches_frame, width=170, height=75)
+        self.canvas.create_window(1110,238, anchor="nw", window=self.patches_frame, width=170, height=75)
 
         extract_patches_all_frames_btn = tk.Button(self.patches_frame, text = "Video", command = self.extract_patches)
         extract_patches_all_frames_btn.config(width=5,height=2)
@@ -103,7 +103,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         #------------------------------------------------------------------------------------------------------------------------------------------#
         # Annotation options window
         self.annotation_options_label = tk.LabelFrame(self.canvas, text = "Annotation options", padx = 5, pady =5)
-        self.canvas.create_window(800,10,anchor = "nw", window = self.annotation_options_label,width = 260,height = 300    )
+        self.canvas.create_window(800, 10,anchor = "nw", window = self.annotation_options_label,width = 260,height = 305)
 
         self.shape = tk.IntVar()
         #set rectangle as default choice
@@ -184,7 +184,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         #------------------------------------------------------------------------------------------------------------------------------------------#
         # Augmentation frame
         self.augmentation_frame = tk.LabelFrame(self.canvas, text="Augmentation")
-        self.canvas.create_window(1110, 10, anchor="nw", window=self.augmentation_frame, width=170, height=170)
+        self.canvas.create_window(1110, 10, anchor="nw", window=self.augmentation_frame, width=170, height=180)
 
         # aumentation options label
         augmentation_options_label = tk.Label(self.augmentation_frame, text="Options")
@@ -200,17 +200,20 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         check_box_2.place(x=0,y=40)
 
         self.scale = tk.IntVar()
-        check_box_3 = tk.Checkbutton(self.augmentation_frame,text="scale", variable=self.scale, command=self.check_augmentation_boxes)
+        check_box_3 = tk.Checkbutton(self.augmentation_frame, text="scale", variable=self.scale, command=self.check_augmentation_boxes)
         check_box_3.place(x=0, y=60)
 
         self.bgcolor = tk.IntVar()
-        self.bgcolor_check_box = tk.Checkbutton(self.augmentation_frame,text="bg subtraction", variable=self.bgcolor, command=self.check_augmentation_boxes)
+        self.bgcolor_check_box = tk.Checkbutton(self.augmentation_frame, text="bg subtraction", variable=self.bgcolor, command=self.check_augmentation_boxes)
         self.bgcolor_check_box.place(x=0, y=80)
+
+        self.custom_bg = tk.IntVar()
+        self.custom_bg_check_box = tk.Checkbutton(self.augmentation_frame, text="custom bg", variable=self.custom_bg, command=self.check_augmentation_boxes)
+        self.custom_bg_check_box.place(x=0, y=100)
 
         # Random number label
         random_number_label = tk.Label(self.augmentation_frame, text="# Random")
         random_number_label.place(x=90)
-
 
         # Rotation entry
         self.rotation_rand_num = tk.StringVar()
@@ -232,14 +235,19 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         self.bgcolor_canvas = tk.Canvas(self.augmentation_frame, height = 20, width=40)
         self.bgcolor_canvas.place(x=100, y=80)
 
+        # Cutom background button
+        self.custom_bg_btn = tk.Button(self.augmentation_frame, text="bg", command=self.add_custom_bg, padx=5, pady=3)
+        self.custom_bg_btn.config(width=4)
+        self.custom_bg_btn.place(x=100, y=100)
+
         # augment button
         augment_btn = tk.Button(self.augmentation_frame, text="Augment", command=self.augment_data)
-        augment_btn.place(x=40, y=110)
+        augment_btn.place(x=40, y=130)
         self.augmentation_flag = 0
         #-----------------------------------------------------------------------------------------------------------------------------------------#
         # Export Frame
         self.export_frame = tk.LabelFrame(self.canvas, text="Export data as:", padx=5, pady=5)
-        self.canvas.create_window(1110,183, anchor="nw", window=self.export_frame, width=170, height=50)
+        self.canvas.create_window(1110, 190, anchor="nw", window=self.export_frame, width=170, height=50)
 
         # export hdf5 button
         hdf5_export_btn = tk.Button(self.export_frame, text="HDF5", command=lambda: self.export_fun("hdf5"), padx=5, pady=5)
@@ -1351,6 +1359,8 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 
         self.canvas.unbind('<Button-1>')
 
+    def add_custom_bg(self):
+        pass
 
 if __name__ == "__main__":
   parser = argparse.ArgumentParser(description = "Annotation Program")
