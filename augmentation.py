@@ -55,7 +55,8 @@ def calculate_mean_all_frames(color, num_all_frames, frames_folder_path):
 
 
 # function to subtract frames' background color and export
-def sub_bg_color(bg_color, frames_folder_path, sb_bg_folder_path):
+def sub_bg_color_add_custom(bg_color, frames_folder_path, sb_bg_folder_path,
+                            custom_bg, custom_bg_filename):
     np_color = np.zeros((1, 1, 3), dtype='uint8')
     np_color[0, 0, :] = bg_color
     bg_color_hsv = cv2.cvtColor(np_color, cv2.COLOR_RGB2HSV)
@@ -63,32 +64,39 @@ def sub_bg_color(bg_color, frames_folder_path, sb_bg_folder_path):
     sensitivity = 10
     lower = bg_color_hue - sensitivity if bg_color_hue - sensitivity > -1 else 0
     upper = bg_color_hue + sensitivity if bg_color_hue + sensitivity < 180 else 180
+    if custom_bg:
+        background = cv2.imread(custom_bg_filename)
     for root, dirs, files in os.walk(frames_folder_path):
         for frame_number, file in enumerate(files):
             img = cv2.imread(os.path.join(frames_folder_path, file))
             img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
             # create background mask
-            mask = cv2.inRange(img_hsv[:, :, 0], lower, upper)
-            mask = cv2.bitwise_not(mask)
-            output = cv2.bitwise_and(img, img, mask=mask)
+            bg_mask = cv2.inRange(img_hsv[:, :, 0], lower, upper)
+            fg_mask = cv2.bitwise_not(bg_mask)
+            output = cv2.bitwise_and(img, img, mask=fg_mask)
+            if custom_bg:
+                height, width = output.shape[:2]
+                res_bg = cv2.resize(background, (width, height), interpolation=cv2.INTER_AREA)
+                output += cv2.bitwise_and(res_bg, res_bg, mask=bg_mask)
             cv2.imwrite(os.path.join(sb_bg_folder_path, file), output)
-            cv2.imwrite(os.path.join(sb_bg_folder_path, 'mask_'+file), mask)
             print "- Subtract bg color from frame {} done".format(frame_number+1)
+
 
 def augment(augment_flag, TARGET_X_DIM, TARGET_Y_DIM, num_all_frames,
             annotation_folder_path, frames_folder_path, output_folder_path,
             num_scales=0, num_rotations=0, num_colors=0, bg_color=[0, 0, 0],
-            bg_sub=False, color=False):
+            bg_sub=False, custom_bg_filename='', custom_bg=False, color=False):
 
-  # Subtract background color
-  sb_bg_folder_path = os.path.join(frames_folder_path, os.pardir, '.bg_sub')
+  # Subtract background color and add custom
   if bg_sub:
-    print 'recieved bgcolor: ', bg_color
+    sb_bg_folder_path = os.path.join(frames_folder_path, os.pardir, 'bg_sub')
     if not os.path.exists(sb_bg_folder_path):
         os.makedirs(sb_bg_folder_path)
 
-    sub_bg_color(bg_color, frames_folder_path, sb_bg_folder_path)
+    sub_bg_color_add_custom(bg_color, frames_folder_path, sb_bg_folder_path,
+                            custom_bg, custom_bg_filename)
     frames_folder_path = sb_bg_folder_path
+
 
   # calculate the mean over all pixels in all frames
   mean_value = calculate_mean_all_frames(color, num_all_frames, frames_folder_path)

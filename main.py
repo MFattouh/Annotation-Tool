@@ -367,11 +367,19 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       num_scales = 0
       num_rotations = 0
       num_colors = 0
-      if self.bgcolor.get() and self.bgcolor_rgb ==[]:
+      if self.bgcolor.get() and self.bgcolor_rgb == []:
         tkMessageBox.showerror(title="BG Color",
                                message="choose background color first!")
         self.bgcolor_check_box.deselect()
+        self.check_augmentation_boxes()
         return None
+
+      if self.custom_bg.get() and self.custom_bg_filename == '':
+          tkMessageBox.showerror(title="Custom BG",
+                                 message="choose custom background first!")
+          self.custom_bg_check_box.deselect()
+          self.check_augmentation_boxes()
+          return
 
       if self.rotation_rand_num.get() != "":
         # check if it is a positive int digit
@@ -403,7 +411,9 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       self.data_set, self.label_set, self.num_colors, self.num_scales, self.num_rotations, self.video_names_list, self.annotated_frames_list, self.augmentation_flag = augment(self.augmentation_flag,
     downsample_x, downsample_y, self.total_num_of_frames, self.annotation_folder,
     self.frames_folder, self.output_folder, num_scales=num_scales, num_colors=num_colors,
-    num_rotations=num_rotations, bg_color=self.bgcolor_rgb, bg_sub=self.bgcolor.get(), color=COLOR)
+    num_rotations=num_rotations, bg_color=self.bgcolor_rgb,
+    bg_sub=self.bgcolor.get(), custom_bg_filename=self.custom_bg_filename,
+    custom_bg=self.custom_bg.get(), color=COLOR)
 
       if self.augmentation_flag == -1:
         self.augmentation_flag = 0
@@ -445,14 +455,14 @@ class SampleApp(tk.Tk):  # inherit from Tk class
             # ask user to select BG color
             if tkMessageBox.showinfo(title="BG color", message="Please select bg color"):
                 self.canvas.bind('<Button-1>', self.OnPickColorCoord, add='+')
-        self.custom_bg_check_box.config(state='normal')
       else:
         self.bgcolor_rgb = []
         self.bgcolor_canvas.delete("all")
         self.bgcolor_canvas.config(state='disabled')
-        self.custom_bg_check_box.config(state='disabled')
         self.custom_bg_check_box.deselect()
+        self.custom_bg_check_box.config(state='disabled')
         self.custom_bg_btn.config(state='disabled')
+        self.custom_bg_filename = ''
 
       if self.custom_bg.get():
         self.custom_bg_btn.config(state='normal')
@@ -1371,6 +1381,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         self.bgcolor_canvas.create_rectangle(0, 0, 40, 20, fill= bgcolor_hex)
 
         self.canvas.unbind('<Button-1>')
+        self.custom_bg_check_box.config(state='normal')
 
     def add_custom_bg(self):
         options = {}
