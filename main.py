@@ -90,7 +90,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         #------------------------------------------------------------------------------------------------------------------------------------------#
         # Patches frame
         self.patches_frame = tk.LabelFrame(self.canvas, text="Extract patches per", padx=5, pady=5)
-        self.canvas.create_window(1110,238, anchor="nw", window=self.patches_frame, width=170, height=75)
+        self.canvas.create_window(1110,235, anchor="nw", window=self.patches_frame, width=170, height=75)
 
         extract_patches_all_frames_btn = tk.Button(self.patches_frame, text = "Video", command = self.extract_patches)
         extract_patches_all_frames_btn.config(width=5,height=2)
@@ -185,7 +185,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         #------------------------------------------------------------------------------------------------------------------------------------------#
         # Augmentation frame
         self.augmentation_frame = tk.LabelFrame(self.canvas, text="Augmentation")
-        self.canvas.create_window(1110, 10, anchor="nw", window=self.augmentation_frame, width=170, height=180)
+        self.canvas.create_window(1110, 10, anchor="nw", window=self.augmentation_frame, width=170, height=150)
 
         # aumentation options label
         augmentation_options_label = tk.Label(self.augmentation_frame, text="Options")
@@ -203,15 +203,6 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         self.scale = tk.IntVar()
         check_box_3 = tk.Checkbutton(self.augmentation_frame, text="scale", variable=self.scale, command=self.check_augmentation_boxes)
         check_box_3.place(x=0, y=60)
-
-        self.bgcolor = tk.IntVar()
-        self.bgcolor_check_box = tk.Checkbutton(self.augmentation_frame, text="bg subtraction", variable=self.bgcolor, command=self.check_augmentation_boxes)
-        self.bgcolor_check_box.place(x=0, y=80)
-
-        self.custom_bg = tk.IntVar()
-        self.custom_bg_filename = ''
-        self.custom_bg_check_box = tk.Checkbutton(self.augmentation_frame, text="custom bg", variable=self.custom_bg, command=self.check_augmentation_boxes,state='disabled')
-        self.custom_bg_check_box.place(x=0, y=100)
 
         # Random number label
         random_number_label = tk.Label(self.augmentation_frame, text="# Random")
@@ -232,24 +223,41 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         self.scale_entry = tk.Entry(self.augmentation_frame, width=5, textvariable=self.scale_rand_num, state='disabled')
         self.scale_entry.place(x=100, y=60)
 
-        # BG Color canvas
-        self.bgcolor_rgb = []
-        self.bgcolor_canvas = tk.Canvas(self.augmentation_frame, height = 20, width=40)
-        self.bgcolor_canvas.place(x=100, y=80)
-
-        # Cutom background button
-        self.custom_bg_btn = tk.Button(self.augmentation_frame, text="bg", command=self.add_custom_bg, padx=5, pady=3)
-        self.custom_bg_btn.config(width=4, state='disabled')
-        self.custom_bg_btn.place(x=100, y=100)
-
         # augment button
         augment_btn = tk.Button(self.augmentation_frame, text="Augment", command=self.augment_data)
-        augment_btn.place(x=40, y=130)
+        augment_btn.place(x=40, y=90)
         self.augmentation_flag = 0
+
+        #-----------------------------------------------------------------------------------------------------------------------------------------#
+        # Backgournd Freme
+        self.bg_frame = tk.LabelFrame(self.canvas, text="Background")
+        self.canvas.create_window(1290, 10, anchor="nw", window=self.bg_frame, width=170, height=150)
+        # aumentation options label
+        augmentation_options_label = tk.Label(self.bg_frame, text="Options")
+        augmentation_options_label.place(x=5)
+
+        # BG Color canvas
+        self.bgcolor = tk.IntVar()
+        self.bgcolor_check_box = tk.Checkbutton(self.bg_frame, text="bg subtraction", variable=self.bgcolor, command=self.check_augmentation_boxes)
+        self.bgcolor_check_box.place(x=0, y=20)
+
+        self.custom_bg = tk.IntVar()
+        self.custom_bg_filename = ''
+        self.custom_bg_check_box = tk.Checkbutton(self.bg_frame, text="custom bg", variable=self.custom_bg, command=self.check_augmentation_boxes,state='disabled')
+        self.custom_bg_check_box.place(x=0, y=40)
+        self.bgcolor_rgb = []
+        self.bgcolor_canvas = tk.Canvas(self.bg_frame, height = 20, width=40)
+        self.bgcolor_canvas.place(x=100, y=20)
+
+        # Cutom background button
+        self.custom_bg_btn = tk.Button(self.bg_frame, text="bg", command=self.add_custom_bg, padx=5, pady=3)
+        self.custom_bg_btn.config(width=4, state='disabled')
+        self.custom_bg_btn.place(x=100, y=40)
+
         #-----------------------------------------------------------------------------------------------------------------------------------------#
         # Export Frame
         self.export_frame = tk.LabelFrame(self.canvas, text="Export data as:", padx=5, pady=5)
-        self.canvas.create_window(1110, 190, anchor="nw", window=self.export_frame, width=170, height=50)
+        self.canvas.create_window(1110, 170, anchor="nw", window=self.export_frame, width=170, height=50)
 
         # export hdf5 button
         hdf5_export_btn = tk.Button(self.export_frame, text="HDF5", command=lambda: self.export_fun("hdf5"), padx=5, pady=5)
