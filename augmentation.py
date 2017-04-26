@@ -54,38 +54,44 @@ def calculate_mean_all_frames(color, num_all_frames, frames_folder_path):
   return mean
 
 
-# function to subtract frames' background color and export
-def sub_bg_color_add_custom(bg_color, frames_folder_path, sb_bg_folder_path,
-                            custom_bg, custom_bg_filename):
+# function to remove image's background and augment a custom one
+def augment_bg(src, bgcolor, sensitivity, custom_bg, custom_bg_img):
     np_color = np.zeros((1, 1, 3), dtype='uint8')
-    np_color[0, 0, :] = bg_color
-    bg_color_hsv = cv2.cvtColor(np_color, cv2.COLOR_RGB2HSV)
-    bg_color_hue = bg_color_hsv[0, 0, 0]
+    np_color[0, 0, :] = bgcolor
     sensitivity = 10
+    bg_color_hue = cv2.cvtColor(np_color, cv2.COLOR_RGB2HSV)[0, 0, 0]
     lower = bg_color_hue - sensitivity if bg_color_hue - sensitivity > -1 else 0
     upper = bg_color_hue + sensitivity if bg_color_hue + sensitivity < 180 else 180
-    if custom_bg:
-        background = cv2.imread(custom_bg_filename)
+    # convert the current image to hsv colorspace
+    img_hsv = cv2.cvtColor(src, cv2.COLOR_BGR2HSV)
+    # extract mask
+    bg_mask = cv2.inRange(img_hsv[:, :, 0], lower, upper)
+    fg_mask = cv2.bitwise_not(bg_mask)
+    output = cv2.bitwise_and(src, src, mask=fg_mask)
+    if custom_bg and custom_bg_img is not None:
+        height, width = output.shape[:2]
+        res_bg = cv2.resize(custom_bg_img, (width, height),
+                            interpolation=cv2.INTER_AREA)
+        output += cv2.bitwise_and(res_bg, res_bg, mask=bg_mask)
+    return (output, fg_mask, bg_mask)
+
+
+def sub_bg_color_add_custom(bg_color, sensitivity, frames_folder_path,
+                            sb_bg_folder_path, custom_bg, custom_bg_img):
     for root, dirs, files in os.walk(frames_folder_path):
         for frame_number, file in enumerate(files):
             img = cv2.imread(os.path.join(frames_folder_path, file))
-            img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-            # create background mask
-            bg_mask = cv2.inRange(img_hsv[:, :, 0], lower, upper)
-            fg_mask = cv2.bitwise_not(bg_mask)
-            output = cv2.bitwise_and(img, img, mask=fg_mask)
-            if custom_bg:
-                height, width = output.shape[:2]
-                res_bg = cv2.resize(background, (width, height), interpolation=cv2.INTER_AREA)
-                output += cv2.bitwise_and(res_bg, res_bg, mask=bg_mask)
+            output, _, _ = augment_bg(img, bg_color, sensitivity, True,
+                                      custom_bg_img)
             cv2.imwrite(os.path.join(sb_bg_folder_path, file), output)
             print "- Subtract bg color from frame {} done".format(frame_number+1)
 
 
 def augment(augment_flag, TARGET_X_DIM, TARGET_Y_DIM, num_all_frames,
             annotation_folder_path, frames_folder_path, output_folder_path,
-            num_scales=0, num_rotations=0, num_colors=0, bg_color=[0, 0, 0],
-            bg_sub=False, custom_bg_filename='', custom_bg=False, color=False):
+            num_scales=0, num_rotations=0, num_colors=0, bg_sub=False, bg_color=
+            [0, 0, 0], sensitivity=0, custom_bg=False, custom_bg_img=None,
+            color=False):
 
   # Subtract background color and add custom
   if bg_sub:
@@ -93,8 +99,8 @@ def augment(augment_flag, TARGET_X_DIM, TARGET_Y_DIM, num_all_frames,
     if not os.path.exists(sb_bg_folder_path):
         os.makedirs(sb_bg_folder_path)
 
-    sub_bg_color_add_custom(bg_color, frames_folder_path, sb_bg_folder_path,
-                            custom_bg, custom_bg_filename)
+    sub_bg_color_add_custom(bg_color, sensitivity, frames_folder_path,
+                            sb_bg_folder_path, custom_bg, custom_bg_img)
     frames_folder_path = sb_bg_folder_path
 
 
