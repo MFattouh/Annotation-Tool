@@ -85,24 +85,15 @@ def sub_bg_color_add_custom(bg_color, sensitivity, frames_folder_path,
                                       custom_bg_img)
             cv2.imwrite(os.path.join(sb_bg_folder_path, file), output)
             print "- Subtract bg color from frame {} done".format(frame_number+1)
-
+    return True
 
 def augment(augment_flag, TARGET_X_DIM, TARGET_Y_DIM, num_all_frames,
             annotation_folder_path, frames_folder_path, output_folder_path,
-            num_scales=0, num_rotations=0, num_colors=0, bg_sub=False, bg_color=
-            [0, 0, 0], sensitivity=0, custom_bg=False, custom_bg_img=None,
-            color=False):
+            num_scales=0, num_rotations=0, num_colors=0, aug_bg=False, color=False):
 
-  # Subtract background color and add custom
-  if bg_sub:
-    sb_bg_folder_path = os.path.join(frames_folder_path, os.pardir, 'bg_sub')
-    if not os.path.exists(sb_bg_folder_path):
-        os.makedirs(sb_bg_folder_path)
-
-    sub_bg_color_add_custom(bg_color, sensitivity, frames_folder_path,
-                            sb_bg_folder_path, custom_bg, custom_bg_img)
-    frames_folder_path = sb_bg_folder_path
-
+  # augment background
+  if aug_bg:
+    frames_folder_path = os.path.join(frames_folder_path, os.pardir, 'aug_bg')
 
   # calculate the mean over all pixels in all frames
   mean_value = calculate_mean_all_frames(color, num_all_frames, frames_folder_path)

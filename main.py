@@ -18,7 +18,7 @@ from cv2 import imread
 from extract_frames import extract_frames_from_videos # frame extraction function
 from extract_frames import get_video_file_name
 from compute_masks import create_mask_for_image # mask for single image
-from augmentation import augment, augment_bg
+from augmentation import augment, augment_bg, sub_bg_color_add_custom
 from export_data import export
 
 COLOR = False
@@ -230,6 +230,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 
         #-----------------------------------------------------------------------------------------------------------------------------------------#
         # Backgournd Freme
+        self.aug_bg = False
         self.bg_frame = tk.LabelFrame(self.canvas, text="Background")
         self.canvas.create_window(1290, 10, anchor="nw", window=self.bg_frame, width=170, height=150)
         # aumentation options label
@@ -255,6 +256,9 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         self.custom_bg_btn.config(width=4, state='disabled')
         self.custom_bg_btn.place(x=100, y=40)
 
+        # augment background button
+        augment_bg_btn = tk.Button(self.bg_frame, text="Augment bg", command=self.export_augment_bg)
+        augment_bg_btn.place(x=40, y=90)
         #-----------------------------------------------------------------------------------------------------------------------------------------#
         # Export Frame
         self.export_frame = tk.LabelFrame(self.canvas, text="Export data as:", padx=5, pady=5)
@@ -376,15 +380,6 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       num_scales = 0
       num_rotations = 0
       num_colors = 0
-      if self.bgcolor.get() and self.bgcolor_rgb == []:
-        tkMessageBox.showerror(title="BG Color",
-                               message="choose background color first!")
-        return None
-
-      if self.custom_bg.get() and self.custom_bg_img is None:
-          tkMessageBox.showerror(title="Custom BG",
-                                 message="choose custom background first!")
-          return
 
       if self.rotation_rand_num.get() != "":
         # check if it is a positive int digit
@@ -416,9 +411,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       self.data_set, self.label_set, self.num_colors, self.num_scales, self.num_rotations, self.video_names_list, self.annotated_frames_list, self.augmentation_flag = augment(self.augmentation_flag,
     downsample_x, downsample_y, self.total_num_of_frames, self.annotation_folder,
     self.frames_folder, self.output_folder, num_scales=num_scales,
-    num_rotations=num_rotations, num_colors=num_colors, bg_sub=
-    self.bgcolor.get(), bg_color=self.bgcolor_rgb, sensitivity=self.sensitivity,
-    custom_bg=self.custom_bg.get(), custom_bg_img=self.custom_bg_img,
+    num_rotations=num_rotations, num_colors=num_colors, aug_bg=self.aug_bg,
     color=COLOR)
 
       if self.augmentation_flag == -1:
@@ -473,6 +466,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         self.read_image_from_file(self.img_num)
         self.create_photo_from_raw()
         self.canvas.itemconfig(self.img_id, image = self.curr_photoimage)
+        self.aug_bg = False
 
       if self.custom_bg.get():
         self.custom_bg_btn.config(state='normal')
@@ -1425,6 +1419,28 @@ class SampleApp(tk.Tk):  # inherit from Tk class
             self.read_image_from_file(self.img_num)
             self.create_photo_from_raw()
             self.canvas.itemconfig(self.img_id, image = self.curr_photoimage)
+
+
+    def export_augment_bg(self):
+        if not self.bgcolor.get():
+            return None
+        elif self.bgcolor_rgb == []:
+            tkMessageBox.showerror(title="BG Color",
+                                   message="choose background color first!")
+            self.aug_bg = False
+            return None
+        elif self.custom_bg.get() and self.custom_bg_img is None:
+            tkMessageBox.showerror(title="Custom BG",
+                                   message="choose custom background first!")
+            self.aug_bg = False
+            return None
+        else:
+            sb_bg_folder_path = os.path.join(self.frames_folder, os.pardir, 'aug_bg')
+            if not os.path.exists(sb_bg_folder_path):
+                os.mkdir(sb_bg_folder_path)
+            self.aug_bg = sub_bg_color_add_custom(self.bgcolor_rgb,
+                self.sensitivity, self.frames_folder, sb_bg_folder_path,
+                self.custom_bg.get(), self.custom_bg_img)
 
 if __name__ == "__main__":
   parser = argparse.ArgumentParser(description = "Annotation Program")
