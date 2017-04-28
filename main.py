@@ -474,7 +474,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       if self.autobg.get():
             self.augment_image = True
             self.bgcolor_check_box['state'] = 'disabled'
-            self.autobg_detection()
+            autobg_detection_add_custom()
             self.custom_bg_check_box.config(state='normal')
       else:
             self.bgcolor_check_box['state'] = 'normal'
@@ -837,6 +837,8 @@ class SampleApp(tk.Tk):  # inherit from Tk class
             #redord to RGB
             self.curr_image_raw = np.dstack((output[:, :, 2],output[:, :, 1],
                                                  output[:, :, 0]))
+          elif self.autobg.get():
+              autobg_detection_add_custom()
       else:
           self.curr_image_raw = io.imread(f)
 
@@ -1465,12 +1467,9 @@ class SampleApp(tk.Tk):  # inherit from Tk class
             sb_bg_folder_path = os.path.join(self.frames_folder, os.pardir, 'aug_bg')
             if not os.path.exists(sb_bg_folder_path):
                 os.mkdir(sb_bg_folder_path)
-            self.use_augmented_bg = augment_bg(self.bgcolor_rgb,
-                self.sensitivity, self.frames_folder, sb_bg_folder_path,
-                self.custom_bg.get(), self.custom_bg_img)
-
-    def autobg_detection(self):
-        pass
+            self.use_augmented_bg = augment_bg(self.bgcolor.get(), self.autobg.get(),
+                self.bgcolor_rgb,self.sensitivity, self.frames_folder,
+                sb_bg_folder_path, self.custom_bg.get(), self.custom_bg_img)
 
 
 if __name__ == "__main__":

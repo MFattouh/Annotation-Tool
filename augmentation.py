@@ -53,6 +53,9 @@ def calculate_mean_all_frames(color, num_all_frames, frames_folder_path):
   mean = np.array(suma) / num_all_frames
   return mean
 
+def autobg_detection_add_custom():
+    pass
+
 
 # function to remove image's background and augment a custom one
 def sub_bg_color_add_custom(src, bgcolor, sensitivity, custom_bg, custom_bg_img):
@@ -75,16 +78,20 @@ def sub_bg_color_add_custom(src, bgcolor, sensitivity, custom_bg, custom_bg_img)
         output += cv2.bitwise_and(res_bg, res_bg, mask=bg_mask)
     return (output, fg_mask, bg_mask)
 
-def augment_bg(bg_color, sensitivity, frames_folder_path,
+def augment_bg(autobg_detection, bgcolor_detection, bg_color, sensitivity, frames_folder_path,
                             sb_bg_folder_path, custom_bg, custom_bg_img):
-    for root, dirs, files in os.walk(frames_folder_path):
-        for frame_number, file in enumerate(files):
+    if bgcolor_detection:
+        for root, dirs, files in os.walk(frames_folder_path):
+          for frame_number, file in enumerate(files):
             img = cv2.imread(os.path.join(frames_folder_path, file))
             output, _, _ = augment_bg(img, bg_color, sensitivity, True,
                                       custom_bg_img)
             cv2.imwrite(os.path.join(sb_bg_folder_path, file), output)
             print "- Subtract bg color from frame {} done".format(frame_number+1)
-    return True
+    elif autobg_detection:
+        pass
+
+    return autobg_detection or bgcolor_detection
 
 def augment(augment_flag, TARGET_X_DIM, TARGET_Y_DIM, num_all_frames,
             annotation_folder_path, frames_folder_path, output_folder_path,
