@@ -243,25 +243,26 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         self.bgcolor_check_box = tk.Checkbutton(self.bg_frame, text="bg subtraction", variable=self.bgcolor, command=self.check_bg_boxes)
         self.bgcolor_check_box.place(x=0, y=20)
         self.sensitivity = 0
-
-        self.custom_bg = tk.IntVar()
-        self.custom_bg_img = None
-        self.custom_bg_check_box = tk.Checkbutton(self.bg_frame, text="custom bg", variable=self.custom_bg, command=self.check_bg_boxes,state='disabled')
-        self.custom_bg_check_box.place(x=0, y=40)
-        self.bgcolor_rgb = []
         self.bgcolor_canvas = tk.Canvas(self.bg_frame, height = 20, width=40)
         self.bgcolor_canvas.place(x=100, y=20)
-
-        # Cutom background button
-        self.custom_bg_btn = tk.Button(self.bg_frame, text="bg", command=self.on_custom_bg, padx=5, pady=3)
-        self.custom_bg_btn.config(width=4, state='disabled')
-        self.custom_bg_btn.place(x=100, y=40)
 
         # Automatic BG detection checkbox
         self.autobg = tk.IntVar()
         self.autobg_check_box = tk.Checkbutton(self.bg_frame, text="Auto bg Detection", variable=self.autobg, command=self.check_bg_boxes)
-        self.autobg_check_box.place(x=0, y=60)
+        self.autobg_check_box.place(x=0, y=40)
         self.fg_masks = None
+
+        # Custom bg
+        self.custom_bg = tk.IntVar()
+        self.custom_bg_img = None
+        self.custom_bg_check_box = tk.Checkbutton(self.bg_frame, text="custom bg", variable=self.custom_bg, command=self.check_bg_boxes,state='disabled')
+        self.custom_bg_check_box.place(x=0, y=60)
+        self.bgcolor_rgb = []
+
+        # Cutom background button
+        self.custom_bg_btn = tk.Button(self.bg_frame, text="bg", command=self.on_custom_bg, padx=5, pady=3)
+        self.custom_bg_btn.config(width=4, state='disabled')
+        self.custom_bg_btn.place(x=100, y=60)
 
         # augment background button
         augment_bg_btn = tk.Button(self.bg_frame, text="Augment bg", command=self.export_augment_bg)
