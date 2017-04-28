@@ -13,8 +13,8 @@ import time
 import argparse # for the arguments passed
 import matplotlib.pyplot as plt
 from sklearn.feature_extraction import image # just another image processing lib
-from cv2 import imread
-
+from cv2 import imread, BackgroundSubtractorMOG2, threshold
+import cv2
 from extract_frames import extract_frames_from_videos # frame extraction function
 from extract_frames import get_video_file_name
 from compute_masks import create_mask_for_image # mask for single image
@@ -261,6 +261,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         self.autobg = tk.IntVar()
         self.autobg_check_box = tk.Checkbutton(self.bg_frame, text="Auto bg Detection", variable=self.autobg, command=self.check_bg_boxes)
         self.autobg_check_box.place(x=0, y=60)
+        self.fg_masks = None
 
         # augment background button
         augment_bg_btn = tk.Button(self.bg_frame, text="Augment bg", command=self.export_augment_bg)
@@ -462,6 +463,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         if self.bgcolor_rgb == []:
             self.augment_image = True
             self.autobg_check_box['state'] = 'disabled'
+            self.fg_masks = None
             if tkMessageBox.showinfo(title="BG color", message="Please select bg color"):
                 self.canvas.bind('<Button-1>', self.OnPickColorCoord, add='+')
       else:
@@ -472,12 +474,26 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         self.autobg_check_box['state'] = 'normal'
 
       if self.autobg.get():
-            self.augment_image = True
+        if self.fg_masks is None:
             self.bgcolor_check_box['state'] = 'disabled'
-            autobg_detection_add_custom()
+            fgbg = BackgroundSubtractorMOG2()
+            a = 0
+            for root, dirs, files in os.walk(self.frames_folder):
+                height, width = self.curr_image_raw.shape[:2]
+                self.fg_masks = np.zeros((height, width, len(files)), dtype=np.uint8)
+                for frame_number, file in enumerate(files):
+                    img = cv2.imread(os.path.join(self.frames_folder, file))
+                    self.fg_masks[:, :, frame_number] = fgbg.apply(img)
+                    #threshold(fg_mask, 128, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
+                    a = a + 1
+                    print(a)
+
+            self.augment_image = True
             self.custom_bg_check_box.config(state='normal')
+
       else:
             self.bgcolor_check_box['state'] = 'normal'
+            self.fg_masks = None
 
       if self.custom_bg.get():
         self.custom_bg_btn.config(state='normal')
@@ -829,16 +845,17 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       f = os.path.join(self.frames_folder,self.video_name + "_{0}.png".format(image_num+1))
       # check if augment background
       if self.augment_image:
+          src = imread(f)
           if self.bgcolor.get():
-            src = imread(f)
             output, _, _ =\
             sub_bg_color_add_custom(src, self.bgcolor_rgb, self.sensitivity,
                        self.custom_bg.get(), self.custom_bg_img)
-            #redord to RGB
-            self.curr_image_raw = np.dstack((output[:, :, 2],output[:, :, 1],
-                                                 output[:, :, 0]))
           elif self.autobg.get():
-              autobg_detection_add_custom()
+            output = autobg_detection_add_custom(src, self.fg_masks[:, :, image_num],
+                        self.custom_bg.get(), self.custom_bg_img)
+          # reorder BGR to RGB
+          self.curr_image_raw = np.dstack((output[:, :, 2],output[:, :, 1],
+                                               output[:, :, 0]))
       else:
           self.curr_image_raw = io.imread(f)
 
@@ -945,9 +962,6 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       print "Video:" , self.video_name
       print "-Segmentation with overlap",overlap,"done for frame:", self.img_num + 1, "|height:", self.rectangle_size[1],"|width:", self.rectangle_size[0]
       tkMessageBox.showinfo(title = "Congrats", message = "Segmentation done!")
-
-
-
 
     def sliding_window(self, window_size, image_num = 0, overlap = 0):
 
@@ -1450,6 +1464,8 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 
 
     def export_augment_bg(self):
+        if not self.augment_image:
+            return None
         if not self.bgcolor.get() and not self.autobg.get():
             return None
         elif self.bgcolor_rgb == [] and not self.autobg.get():
@@ -1467,8 +1483,8 @@ class SampleApp(tk.Tk):  # inherit from Tk class
             sb_bg_folder_path = os.path.join(self.frames_folder, os.pardir, 'aug_bg')
             if not os.path.exists(sb_bg_folder_path):
                 os.mkdir(sb_bg_folder_path)
-            self.use_augmented_bg = augment_bg(self.bgcolor.get(), self.autobg.get(),
-                self.bgcolor_rgb,self.sensitivity, self.frames_folder,
+            self.use_augmented_bg = augment_bg(self.autobg.get(), self.bgcolor.get(),
+                self.fg_masks, self.bgcolor_rgb,self.sensitivity, self.frames_folder,
                 sb_bg_folder_path, self.custom_bg.get(), self.custom_bg_img)
 
 

@@ -53,8 +53,16 @@ def calculate_mean_all_frames(color, num_all_frames, frames_folder_path):
   mean = np.array(suma) / num_all_frames
   return mean
 
-def autobg_detection_add_custom():
-    pass
+
+def autobg_detection_add_custom(src, fg_mask, custom_bg, custom_bg_img):
+    output = cv2.bitwise_and(src, src, mask=fg_mask)
+    if custom_bg and custom_bg_img is not None:
+        bg_mask = cv2.bitwise_not(fg_mask)
+        height, width = output.shape[:2]
+        res_bg = cv2.resize(custom_bg_img, (width, height),
+                            interpolation=cv2.INTER_AREA)
+        output += cv2.bitwise_and(res_bg, res_bg, mask=bg_mask)
+    return output
 
 
 # function to remove image's background and augment a custom one
@@ -78,18 +86,24 @@ def sub_bg_color_add_custom(src, bgcolor, sensitivity, custom_bg, custom_bg_img)
         output += cv2.bitwise_and(res_bg, res_bg, mask=bg_mask)
     return (output, fg_mask, bg_mask)
 
-def augment_bg(autobg_detection, bgcolor_detection, bg_color, sensitivity, frames_folder_path,
+def augment_bg(autobg_detection, bgcolor_detection, fg_masks, bg_color, sensitivity, frames_folder_path,
                             sb_bg_folder_path, custom_bg, custom_bg_img):
     if bgcolor_detection:
         for root, dirs, files in os.walk(frames_folder_path):
           for frame_number, file in enumerate(files):
             img = cv2.imread(os.path.join(frames_folder_path, file))
-            output, _, _ = augment_bg(img, bg_color, sensitivity, True,
+            output, _, _ = sub_bg_color_add_custom(img, bg_color, sensitivity, True,
                                       custom_bg_img)
             cv2.imwrite(os.path.join(sb_bg_folder_path, file), output)
-            print "- Subtract bg color from frame {} done".format(frame_number+1)
+            print "- Augment frame's {} bg done".format(frame_number+1)
     elif autobg_detection:
-        pass
+        for root, dirs, files in os.walk(frames_folder_path):
+          for frame_number, file in enumerate(files):
+            img = cv2.imread(os.path.join(frames_folder_path, file))
+            output = autobg_detection_add_custom(img, fg_masks[:,:,frame_number]
+                                                 , custom_bg, custom_bg_img)
+            cv2.imwrite(os.path.join(sb_bg_folder_path, file), output)
+            print "- Augment frame's {} bg done".format(frame_number+1)
 
     return autobg_detection or bgcolor_detection
 
