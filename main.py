@@ -832,7 +832,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
           if self.bgcolor.get():
             src = imread(f)
             output, _, _ =\
-            augment_bg(src, self.bgcolor_rgb, self.sensitivity,
+            sub_bg_color_add_custom(src, self.bgcolor_rgb, self.sensitivity,
                        self.custom_bg.get(), self.custom_bg_img)
             #redord to RGB
             self.curr_image_raw = np.dstack((output[:, :, 2],output[:, :, 1],
@@ -1465,7 +1465,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
             sb_bg_folder_path = os.path.join(self.frames_folder, os.pardir, 'aug_bg')
             if not os.path.exists(sb_bg_folder_path):
                 os.mkdir(sb_bg_folder_path)
-            self.use_augmented_bg = sub_bg_color_add_custom(self.bgcolor_rgb,
+            self.use_augmented_bg = augment_bg(self.bgcolor_rgb,
                 self.sensitivity, self.frames_folder, sb_bg_folder_path,
                 self.custom_bg.get(), self.custom_bg_img)
 

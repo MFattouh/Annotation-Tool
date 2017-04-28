@@ -55,7 +55,7 @@ def calculate_mean_all_frames(color, num_all_frames, frames_folder_path):
 
 
 # function to remove image's background and augment a custom one
-def augment_bg(src, bgcolor, sensitivity, custom_bg, custom_bg_img):
+def sub_bg_color_add_custom(src, bgcolor, sensitivity, custom_bg, custom_bg_img):
     np_color = np.zeros((1, 1, 3), dtype='uint8')
     np_color[0, 0, :] = bgcolor
     sensitivity = 10
@@ -75,8 +75,7 @@ def augment_bg(src, bgcolor, sensitivity, custom_bg, custom_bg_img):
         output += cv2.bitwise_and(res_bg, res_bg, mask=bg_mask)
     return (output, fg_mask, bg_mask)
 
-
-def sub_bg_color_add_custom(bg_color, sensitivity, frames_folder_path,
+def augment_bg(bg_color, sensitivity, frames_folder_path,
                             sb_bg_folder_path, custom_bg, custom_bg_img):
     for root, dirs, files in os.walk(frames_folder_path):
         for frame_number, file in enumerate(files):
