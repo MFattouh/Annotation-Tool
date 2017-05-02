@@ -845,7 +845,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       # if no parameter is passed set to self.img_num + 1
       if (image_num == -1):
         image_num = self.img_num
-      f = os.path.join(self.frames_folder,self.video_name + "_{0}.png".format(image_num+1))
+      f = os.path.join(self.frames_folder, self.video_name + "_{0:05d}.png".format(image_num+1))
       # check if augment background
       if self.augment_image:
           src = imread(f)
