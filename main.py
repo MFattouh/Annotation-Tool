@@ -229,18 +229,20 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         self.augmentation_flag = 0
 
         #-----------------------------------------------------------------------------------------------------------------------------------------#
-        # Backgournd Freme
+        # Backgournd Frame
         self.use_augmented_bg = False
         self.augment_image = False
         self.bg_frame = tk.LabelFrame(self.canvas, text="Background")
-        self.canvas.create_window(1290, 10, anchor="nw", window=self.bg_frame, width=170, height=150)
+        self.canvas.create_window(1290, 10, anchor="nw", window=self.bg_frame, width=170, height=210)
         # aumentation options label
         augmentation_options_label = tk.Label(self.bg_frame, text="Options")
         augmentation_options_label.place(x=5)
         MODES = [
             ("None", "none"),
             ("Color Detection", "color"),
-            ("MOG2", "mog2")
+            ("MOG", "mog1"),
+            ("MOG2", "mog2"),
+            ("GMG", "gmg")
         ]
         self.bg_aug = tk.StringVar()
         self.bg_aug.set("none")  # initialize
@@ -255,23 +257,24 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         self.bgcolor_canvas.place(x=120, y=40)
 
         # Automatic BG detection checkbox
-        self.fg_masks = None
+        self.fg_masks_mog1 = None
+        self.fg_masks_mog2 = None
 
         # Custom bg
         self.custom_bg = tk.IntVar()
         self.custom_bg_img = None
         self.custom_bg_check_box = tk.Checkbutton(self.bg_frame, text="custom bg", variable=self.custom_bg, command=self.OnBGRadio, state='disabled')
-        self.custom_bg_check_box.place(x=0, y=80)
+        self.custom_bg_check_box.place(x=0, y=120)
         self.bgcolor_rgb = []
 
         # Custom background button
         self.custom_bg_btn = tk.Button(self.bg_frame, text="bg", command=self.on_custom_bg, padx=5, pady=3)
         self.custom_bg_btn.config(width=4, state='disabled')
-        self.custom_bg_btn.place(x=120, y=80)
+        self.custom_bg_btn.place(x=120, y=120)
 
         # augment background button
         augment_bg_btn = tk.Button(self.bg_frame, text="Augment bg", command=self.export_augment_bg)
-        augment_bg_btn.place(x=35, y=110)
+        augment_bg_btn.place(x=35, y=153)
         #-----------------------------------------------------------------------------------------------------------------------------------------#
         # Export Frame
         self.export_frame = tk.LabelFrame(self.canvas, text="Export data as:", padx=5, pady=5)
@@ -484,15 +487,15 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         self.bgcolor_canvas.config(state='disabled')
 
       if self.bg_aug.get() == 'mog2':
-        if self.fg_masks is None:
+        if self.fg_masks_mog2 is None:
             fgbg = BackgroundSubtractorMOG2()
             a = 0
             for root, dirs, files in os.walk(self.frames_folder):
                 height, width = self.curr_image_raw.shape[:2]
-                self.fg_masks = np.zeros((height, width, len(files)), dtype=np.uint8)
+                self.fg_masks_mog2 = np.zeros((height, width, len(files)), dtype=np.uint8)
                 for frame_number, file in enumerate(files):
                     img = cv2.imread(os.path.join(self.frames_folder, file))
-                    self.fg_masks[:, :, frame_number] = fgbg.apply(img)
+                    self.fg_masks_mog2[:, :, frame_number] = fgbg.apply(img)
                     #threshold(fg_mask, 128, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
                     a = a + 1
                     print(a)
@@ -851,8 +854,8 @@ class SampleApp(tk.Tk):  # inherit from Tk class
             sub_bg_color_add_custom(src, self.bgcolor_rgb, self.sensitivity,
                        self.custom_bg.get(), self.custom_bg_img)
           elif self.bg_aug.get() == 'mog2':
-            output = autobg_detection_add_custom(src, self.fg_masks[:, :, image_num],
-                        self.custom_bg.get(), self.custom_bg_img)
+            output = autobg_detection_add_custom(src, self.fg_masks_mog2[:, :, image_num],
+                                                 self.custom_bg.get(), self.custom_bg_img)
           # reorder BGR to RGB
           self.curr_image_raw = np.dstack((output[:, :, 2],output[:, :, 1],
                                                output[:, :, 0]))
@@ -1480,7 +1483,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
             sb_bg_folder_path = os.path.join(self.frames_folder, os.pardir, 'aug_bg')
             if not os.path.exists(sb_bg_folder_path):
                 os.mkdir(sb_bg_folder_path)
-            self.use_augmented_bg = augment_bg(self.bg_aug.get(), self.fg_masks, self.bgcolor_rgb,self.sensitivity,
+            self.use_augmented_bg = augment_bg(self.bg_aug.get(), self.fg_masks_mog2, self.bgcolor_rgb, self.sensitivity,
                                                self.frames_folder, sb_bg_folder_path, self.custom_bg.get(), self.custom_bg_img)
 
 if __name__ == "__main__":
