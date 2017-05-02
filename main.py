@@ -237,36 +237,41 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         # aumentation options label
         augmentation_options_label = tk.Label(self.bg_frame, text="Options")
         augmentation_options_label.place(x=5)
+        MODES = [
+            ("None", "none"),
+            ("Color Detection", "color"),
+            ("MOG2", "mog2")
+        ]
+        self.bg_aug = tk.StringVar()
+        self.bg_aug.set("none")  # initialize
 
+        for index, (text, mode) in enumerate(MODES):
+            bg_aug_radio = tk.Radiobutton(self.bg_frame, text=text, variable=self.bg_aug, value=mode, \
+                                          command=self.OnBGRadio)
+            bg_aug_radio.place(x=0, y=(index + 1) * 20)
         # BG Color canvas
-        self.bgcolor = tk.IntVar()
-        self.bgcolor_check_box = tk.Checkbutton(self.bg_frame, text="bg subtraction", variable=self.bgcolor, command=self.check_bg_boxes)
-        self.bgcolor_check_box.place(x=0, y=20)
         self.sensitivity = 0
         self.bgcolor_canvas = tk.Canvas(self.bg_frame, height = 20, width=40)
-        self.bgcolor_canvas.place(x=100, y=20)
+        self.bgcolor_canvas.place(x=120, y=40)
 
         # Automatic BG detection checkbox
-        self.autobg = tk.IntVar()
-        self.autobg_check_box = tk.Checkbutton(self.bg_frame, text="Auto bg Detection", variable=self.autobg, command=self.check_bg_boxes)
-        self.autobg_check_box.place(x=0, y=40)
         self.fg_masks = None
 
         # Custom bg
         self.custom_bg = tk.IntVar()
         self.custom_bg_img = None
-        self.custom_bg_check_box = tk.Checkbutton(self.bg_frame, text="custom bg", variable=self.custom_bg, command=self.check_bg_boxes,state='disabled')
-        self.custom_bg_check_box.place(x=0, y=60)
+        self.custom_bg_check_box = tk.Checkbutton(self.bg_frame, text="custom bg", variable=self.custom_bg, command=self.OnBGRadio, state='disabled')
+        self.custom_bg_check_box.place(x=0, y=80)
         self.bgcolor_rgb = []
 
-        # Cutom background button
+        # Custom background button
         self.custom_bg_btn = tk.Button(self.bg_frame, text="bg", command=self.on_custom_bg, padx=5, pady=3)
         self.custom_bg_btn.config(width=4, state='disabled')
-        self.custom_bg_btn.place(x=100, y=60)
+        self.custom_bg_btn.place(x=120, y=80)
 
         # augment background button
         augment_bg_btn = tk.Button(self.bg_frame, text="Augment bg", command=self.export_augment_bg)
-        augment_bg_btn.place(x=35, y=90)
+        augment_bg_btn.place(x=35, y=110)
         #-----------------------------------------------------------------------------------------------------------------------------------------#
         # Export Frame
         self.export_frame = tk.LabelFrame(self.canvas, text="Export data as:", padx=5, pady=5)
@@ -459,12 +464,17 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       # return the focus to the canvas
       self.canvas.focus_set()
 
-    def check_bg_boxes(self):
-      if self.bgcolor.get():
+    def OnBGRadio(self):
+      if self.bg_aug.get() == 'none':
+          self.custom_bg_check_box.deselect()
+          self.custom_bg_check_box['state']='disabled'
+          self.custom_bg_btn['state']='disabled'
+          self.custom_bg_img = None
+          self.augment_image = False
+
+      if self.bg_aug.get() == 'color':
         if self.bgcolor_rgb == []:
             self.augment_image = True
-            self.autobg_check_box['state'] = 'disabled'
-            self.fg_masks = None
             if tkMessageBox.showinfo(title="BG color", message="Please select bg color"):
                 self.canvas.bind('<Button-1>', self.OnPickColorCoord, add='+')
       else:
@@ -472,11 +482,9 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         self.bgcolor_rgb = []
         self.bgcolor_canvas.delete("all")
         self.bgcolor_canvas.config(state='disabled')
-        self.autobg_check_box['state'] = 'normal'
 
-      if self.autobg.get():
+      if self.bg_aug.get() == 'mog2':
         if self.fg_masks is None:
-            self.bgcolor_check_box['state'] = 'disabled'
             fgbg = BackgroundSubtractorMOG2()
             a = 0
             for root, dirs, files in os.walk(self.frames_folder):
@@ -492,29 +500,20 @@ class SampleApp(tk.Tk):  # inherit from Tk class
             self.augment_image = True
             self.custom_bg_check_box.config(state='normal')
 
-      else:
-            self.bgcolor_check_box['state'] = 'normal'
-            self.fg_masks = None
-
       if self.custom_bg.get():
         self.custom_bg_btn.config(state='normal')
+        if self.custom_bg_img is None:
+            tkMessageBox.showinfo(title="Custom BG Image", message="Please select image")
       else:
         self.custom_bg_btn.config(state='disabled')
-        if self.bgcolor.get() and self.bgcolor_rgb != []:
+        if self.bg_aug.get() == 'color' and self.bgcolor_rgb != []:
             self.custom_bg_img = None
             self.read_image_from_file(self.img_num)
             self.create_photo_from_raw()
             self.canvas.itemconfig(self.img_id, image = self.curr_photoimage)
 
-      if not self.bgcolor.get() and not self.autobg.get():
-        self.custom_bg_check_box.deselect()
-        self.custom_bg_check_box.config(state='disabled')
-        self.custom_bg_btn.config(state='disabled')
-        self.custom_bg_img = None
-        self.augment_image = False
-
       # in case bgcolor is selected, don't update image here
-      if self.bgcolor.get():
+      if self.bg_aug.get() == 'color':
           return
       self.read_image_from_file(self.img_num)
       self.create_photo_from_raw()
@@ -847,11 +846,11 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       # check if augment background
       if self.augment_image:
           src = imread(f)
-          if self.bgcolor.get():
+          if self.bg_aug.get() == 'color':
             output, _, _ =\
             sub_bg_color_add_custom(src, self.bgcolor_rgb, self.sensitivity,
                        self.custom_bg.get(), self.custom_bg_img)
-          elif self.autobg.get():
+          elif self.bg_aug.get() == 'mog2':
             output = autobg_detection_add_custom(src, self.fg_masks[:, :, image_num],
                         self.custom_bg.get(), self.custom_bg_img)
           # reorder BGR to RGB
@@ -1463,13 +1462,10 @@ class SampleApp(tk.Tk):  # inherit from Tk class
             self.create_photo_from_raw()
             self.canvas.itemconfig(self.img_id, image = self.curr_photoimage)
 
-
     def export_augment_bg(self):
         if not self.augment_image:
             return None
-        if not self.bgcolor.get() and not self.autobg.get():
-            return None
-        elif self.bgcolor_rgb == [] and not self.autobg.get():
+        elif self.bg_aug.get() == 'color' and self.bgcolor_rgb == []:
             tkMessageBox.showerror(title="BG Color",
                                    message="choose background color first!")
             self.use_augmented_bg = False
@@ -1484,10 +1480,8 @@ class SampleApp(tk.Tk):  # inherit from Tk class
             sb_bg_folder_path = os.path.join(self.frames_folder, os.pardir, 'aug_bg')
             if not os.path.exists(sb_bg_folder_path):
                 os.mkdir(sb_bg_folder_path)
-            self.use_augmented_bg = augment_bg(self.autobg.get(), self.bgcolor.get(),
-                self.fg_masks, self.bgcolor_rgb,self.sensitivity, self.frames_folder,
-                sb_bg_folder_path, self.custom_bg.get(), self.custom_bg_img)
-
+            self.use_augmented_bg = augment_bg(self.bg_aug.get(), self.fg_masks, self.bgcolor_rgb,self.sensitivity,
+                                               self.frames_folder, sb_bg_folder_path, self.custom_bg.get(), self.custom_bg_img)
 
 if __name__ == "__main__":
   parser = argparse.ArgumentParser(description = "Annotation Program")

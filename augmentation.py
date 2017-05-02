@@ -86,9 +86,12 @@ def sub_bg_color_add_custom(src, bgcolor, sensitivity, custom_bg, custom_bg_img)
         output += cv2.bitwise_and(res_bg, res_bg, mask=bg_mask)
     return (output, fg_mask, bg_mask)
 
-def augment_bg(autobg_detection, bgcolor_detection, fg_masks, bg_color, sensitivity, frames_folder_path,
+
+def augment_bg(method, fg_masks, bg_color, sensitivity, frames_folder_path,
                             sb_bg_folder_path, custom_bg, custom_bg_img):
-    if bgcolor_detection:
+    if method == '':
+      return False
+    elif method == 'color':
         for root, dirs, files in os.walk(frames_folder_path):
           for frame_number, file in enumerate(files):
             img = cv2.imread(os.path.join(frames_folder_path, file))
@@ -96,7 +99,7 @@ def augment_bg(autobg_detection, bgcolor_detection, fg_masks, bg_color, sensitiv
                                       custom_bg_img)
             cv2.imwrite(os.path.join(sb_bg_folder_path, file), output)
             print "- Augment frame's {} bg done".format(frame_number+1)
-    elif autobg_detection:
+    elif method == 'mog2':
         for root, dirs, files in os.walk(frames_folder_path):
           for frame_number, file in enumerate(files):
             img = cv2.imread(os.path.join(frames_folder_path, file))
@@ -105,7 +108,7 @@ def augment_bg(autobg_detection, bgcolor_detection, fg_masks, bg_color, sensitiv
             cv2.imwrite(os.path.join(sb_bg_folder_path, file), output)
             print "- Augment frame's {} bg done".format(frame_number+1)
 
-    return autobg_detection or bgcolor_detection
+    return True
 
 def augment(augment_flag, TARGET_X_DIM, TARGET_Y_DIM, num_all_frames,
             annotation_folder_path, frames_folder_path, output_folder_path,
