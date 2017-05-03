@@ -13,7 +13,6 @@ import time
 import argparse # for the arguments passed
 import matplotlib.pyplot as plt
 from sklearn.feature_extraction import image # just another image processing lib
-from cv2 import imread, BackgroundSubtractorMOG2, threshold
 import cv2
 from extract_frames import extract_frames_from_videos # frame extraction function
 from extract_frames import get_video_file_name
@@ -488,18 +487,17 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 
       if self.bg_aug.get() == 'mog2':
         if self.fg_masks_mog2 is None:
-            fgbg = BackgroundSubtractorMOG2()
-            a = 0
+            fgbg = cv2.BackgroundSubtractorMOG2()
             for root, dirs, files in os.walk(self.frames_folder):
                 height, width = self.curr_image_raw.shape[:2]
                 self.fg_masks_mog2 = np.zeros((height, width, len(files)), dtype=np.uint8)
-                for frame_number, file in enumerate(files):
+                for frame_number, file in enumerate(sorted(files)):
                     img = cv2.imread(os.path.join(self.frames_folder, file))
                     self.fg_masks_mog2[:, :, frame_number] = fgbg.apply(img)
-                    #threshold(fg_mask, 128, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
-                    a = a + 1
-                    print(a)
-
+                    # notify the user that work in progress
+                    
+            # A hack to use the already updated background model for the first mask
+            self.fg_masks_mog2[:, :, 0] = self.fg_masks_mog2[:, :, 1]
             self.augment_image = True
             self.custom_bg_check_box.config(state='normal')
 
@@ -518,6 +516,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       # in case bgcolor is selected, don't update image here
       if self.bg_aug.get() == 'color':
           return
+      # update the current displayed frame
       self.read_image_from_file(self.img_num)
       self.create_photo_from_raw()
       self.canvas.itemconfig(self.img_id, image=self.curr_photoimage)
@@ -846,22 +845,21 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       if (image_num == -1):
         image_num = self.img_num
       f = os.path.join(self.frames_folder, self.video_name + "_{0:05d}.png".format(image_num+1))
+      output = src = cv2.imread(f)
+      #output = src = cv2.resize(cv2.imread(f), (600, 400), interpolation=cv2.INTER_AREA)
       # check if augment background
       if self.augment_image:
-          src = imread(f)
           if self.bg_aug.get() == 'color':
-            output, _, _ =\
-            sub_bg_color_add_custom(src, self.bgcolor_rgb, self.sensitivity,
+              output, _, _ =\
+                sub_bg_color_add_custom(src, self.bgcolor_rgb, self.sensitivity,
                        self.custom_bg.get(), self.custom_bg_img)
           elif self.bg_aug.get() == 'mog2':
-            output = autobg_detection_add_custom(src, self.fg_masks_mog2[:, :, image_num],
-                                                 self.custom_bg.get(), self.custom_bg_img)
-          # reorder BGR to RGB
-          self.curr_image_raw = np.dstack((output[:, :, 2],output[:, :, 1],
-                                               output[:, :, 0]))
-      else:
-          self.curr_image_raw = io.imread(f)
 
+              output = autobg_detection_add_custom(src, self.fg_masks_mog2[:, :, image_num],
+                                                 self.custom_bg.get(), self.custom_bg_img)
+
+      # reorder BGR to RGB
+      self.curr_image_raw = np.dstack((output[:, :, 2],output[:, :, 1], output[:, :, 0]))
 
     def create_photo_from_raw(self):
       self.curr_photoimage = ImageTk.PhotoImage(image = Image.fromarray(self.curr_image_raw))
