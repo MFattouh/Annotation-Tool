@@ -67,11 +67,11 @@ def extract_frames_from_one_video(video_file, frames_path, fps):
           # [changeable][optional]
           # 00:00:02 indicates number of seconds to take from starting point
           os.system("ffmpeg -i " + video_file + " -ss " + no_newline +
-            " -t 00:00:02 -qscale:v 2 -r {} -f image2 '".format(fps) + new_path + "%d.png'")
+            " -t 00:00:02 -qscale:v 2 -r {} -f image2 '".format(fps) + new_path + "%05d.png'")
 
           counter = 1
           for f in os.listdir(new_path):
-            shutil.copy2(os.path.join(new_path, "{0}.png".format(counter)), (frames_video_name_fps + "_{0}.png".format(images_counter)))
+            shutil.copy2(os.path.join(new_path, "{0:05d}.png".format(counter)), (frames_video_name_fps + "_{0:05d}.png".format(images_counter)))
             images_counter += 1
             counter += 1
           os.system("rm -R " + new_path)
