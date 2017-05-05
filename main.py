@@ -503,6 +503,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         self.custom_bg_btn.config(state='normal')
         if self.custom_bg_img is None:
             tkMessageBox.showinfo(title="Custom BG Image", message="Please select image")
+            self.on_custom_bg()
       else:
         self.custom_bg_btn.config(state='disabled')
         if self.bg_aug.get() == 'color' and self.bgcolor_rgb != []:
