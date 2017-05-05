@@ -59,8 +59,7 @@ def autobg_detection_add_custom(src, fg_mask, custom_bg, custom_bg_img):
     if custom_bg and custom_bg_img is not None:
         bg_mask = cv2.bitwise_not(fg_mask)
         height, width = output.shape[:2]
-        res_bg = cv2.resize(custom_bg_img, (width, height),
-                            interpolation=cv2.INTER_AREA)
+        res_bg = cv2.resize(custom_bg_img, (width, height), interpolation=cv2.INTER_AREA)
         output += cv2.bitwise_and(res_bg, res_bg, mask=bg_mask)
     return output
 
@@ -69,7 +68,6 @@ def autobg_detection_add_custom(src, fg_mask, custom_bg, custom_bg_img):
 def sub_bg_color_add_custom(src, bgcolor, sensitivity, custom_bg, custom_bg_img):
     np_color = np.zeros((1, 1, 3), dtype='uint8')
     np_color[0, 0, :] = bgcolor
-    sensitivity = 10
     bg_color_hue = cv2.cvtColor(np_color, cv2.COLOR_RGB2HSV)[0, 0, 0]
     lower = bg_color_hue - sensitivity if bg_color_hue - sensitivity > -1 else 0
     upper = bg_color_hue + sensitivity if bg_color_hue + sensitivity < 180 else 180
@@ -81,14 +79,13 @@ def sub_bg_color_add_custom(src, bgcolor, sensitivity, custom_bg, custom_bg_img)
     output = cv2.bitwise_and(src, src, mask=fg_mask)
     if custom_bg and custom_bg_img is not None:
         height, width = output.shape[:2]
-        res_bg = cv2.resize(custom_bg_img, (width, height),
-                            interpolation=cv2.INTER_AREA)
+        res_bg = cv2.resize(custom_bg_img, (width, height), interpolation=cv2.INTER_AREA)
         output += cv2.bitwise_and(res_bg, res_bg, mask=bg_mask)
     return (output, fg_mask, bg_mask)
 
 
-def augment_bg(method, fg_masks, bg_color, sensitivity, frames_folder_path,
-                            sb_bg_folder_path, custom_bg, custom_bg_img):
+def augment_bg(method, fg_masks, bg_color, sensitivity, frames_folder_path, sb_bg_folder_path, custom_bg, custom_bg_img):
+
     if method == '':
       return False
     elif method == 'color':
@@ -112,10 +109,10 @@ def augment_bg(method, fg_masks, bg_color, sensitivity, frames_folder_path,
 
 def augment(augment_flag, TARGET_X_DIM, TARGET_Y_DIM, num_all_frames,
             annotation_folder_path, frames_folder_path, output_folder_path,
-            num_scales=0, num_rotations=0, num_colors=0, aug_bg=False, color=False):
+            num_scales=0, num_rotations=0, num_colors=0, use_seg_mask=False, color=False):
 
   # augment background
-  if aug_bg:
+  if use_seg_mask:
     frames_folder_path = os.path.join(frames_folder_path, os.pardir, 'aug_bg')
 
   # calculate the mean over all pixels in all frames
@@ -185,7 +182,7 @@ def augment(augment_flag, TARGET_X_DIM, TARGET_Y_DIM, num_all_frames,
     print "--------------"
     print "-Video: {}\n".format(video_name)
     for frame_number, annotation_frame in enumerate(annotation_video):
-      frame_name = video_name+ "_" + str(frame_number+1) + ".png"
+      frame_name = video_name+ "_{0:05d}.png".format(frame_number + 1)
       frame_path = os.path.join(frames_folder_path,frame_name)
 
       # ignore data if frame is not annotated or the frame doesn't exist but its annotation exists
@@ -214,7 +211,13 @@ def augment(augment_flag, TARGET_X_DIM, TARGET_Y_DIM, num_all_frames,
         # creating the mask array for the current frame
         # for each label in the current frame
         for label in range(0,len(annotation_frame)):
-          mask[annotation_frame[label][1]:annotation_frame[label][3], annotation_frame[label][0]:annotation_frame[label][2]] = annotation_frame[label][-1]
+          label_mask = box_mask = annotation_frame[label][-1]
+          # TODO: apply fg mask in addition to the bounding box.
+          # How to make sure the loaded label and the fg mask are for the same frame?!!!
+          #if use_seg_mask:
+            #label_mask = cv2.bitwise_and(box_mask, box_mask, mask=seg_masks[:,:, frame_number])
+          mask[annotation_frame[label][1]:annotation_frame[label][3], annotation_frame[label][0]:annotation_frame[label][2]] = label_mask
+
         #-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # 1- Color
         if num_colors != 0:

@@ -423,11 +423,10 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       downsample_x = 300
       downsample_y = 300
 
-      self.data_set, self.label_set, self.num_colors, self.num_scales, self.num_rotations, self.video_names_list, self.annotated_frames_list, self.augmentation_flag = augment(self.augmentation_flag,
-    downsample_x, downsample_y, self.total_num_of_frames, self.annotation_folder,
-    self.frames_folder, self.output_folder, num_scales=num_scales,
-    num_rotations=num_rotations, num_colors=num_colors, aug_bg=self.use_augmented_bg,
-    color=COLOR)
+      self.data_set, self.label_set, self.num_colors, self.num_scales, self.num_rotations, self.video_names_list, self.annotated_frames_list, self.augmentation_flag =\
+          augment(self.augmentation_flag, downsample_x, downsample_y, self.total_num_of_frames, self.annotation_folder,
+                  self.frames_folder, self.output_folder, num_scales=num_scales, num_rotations=num_rotations,
+                  num_colors=num_colors, use_seg_mask=self.use_augmented_bg, color=COLOR)
 
       if self.augmentation_flag == -1:
         self.augmentation_flag = 0
@@ -495,7 +494,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
                     img = cv2.imread(os.path.join(self.frames_folder, file))
                     self.fg_masks_mog2[:, :, frame_number] = fgbg.apply(img)
                     # notify the user that work in progress
-                    
+
             # A hack to use the already updated background model for the first mask
             self.fg_masks_mog2[:, :, 0] = self.fg_masks_mog2[:, :, 1]
             self.augment_image = True
@@ -722,6 +721,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       f.close()
       return frame_rectangle_pairs
 
+    # TODO: This method isn't used at all!!!
     def create_mask(self,save_option):
       # check if there is a frame folder loaded first
       if not self.frames_folder:
@@ -877,6 +877,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
     def change_image(self):
 
       self.read_image_from_file()
+      #TODO: put the bgaug func here and replace function calls to change displaed image with this method
       self.create_photo_from_raw()
       self.canvas.itemconfig(self.img_id, image = self.curr_photoimage)
       self.frame_info_label.winfo_children()[0].config(text = "Frame: {0:0{width}}/{1}".format(self.img_num+1, self.video_num_of_frames, width = 3))
@@ -1319,7 +1320,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       if self.rectangle_frame_pairs[self.img_num] is 0:
         self.rectangle_frame_pairs[self.img_num] = []
         self.rectangle_frame_pairs[self.img_num].append(coords_relative)
-
+        # TODO: Could save the seg_mask here
       # else check for previous annotations
       else:
         label_index = self.get_label_index_in_list()

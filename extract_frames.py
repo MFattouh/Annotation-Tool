@@ -41,7 +41,9 @@ def extract_frames_from_one_video(video_file, frames_path, fps):
       # with the consecutive name  ... , 10034, 10035, ... in the frames_path
       os.system("mkdir " + new_path)
 
-      os.system("ffmpeg -i " + video_file + " -qscale:v 2 -r {} -f image2 '".format(fps) + new_path + "%05d.png'")
+      #eforce a specific dimention from the beginneg
+      os.system("ffmpeg -i " + video_file + " -vf scale=w=640:h=480:force_original_aspect_ratio=decrease -r {} -f image2 '".format(fps) + new_path + "%05d.png'")
+      #os.system("ffmpeg -i " + video_file + " -qscale:v 2 -r {} -f image2 '".format(fps) + new_path + "%05d.png'")
 
       counter = 1
       for f in os.listdir(new_path):
