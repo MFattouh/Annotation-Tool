@@ -232,28 +232,23 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         self.use_augmented_bg = False
         self.augment_image = False
         self.bg_frame = tk.LabelFrame(self.canvas, text="Background")
-        self.canvas.create_window(1290, 10, anchor="nw", window=self.bg_frame, width=170, height=210)
+        self.canvas.create_window(1290, 10, anchor="nw", window=self.bg_frame, width=170, height=150)
         # aumentation options label
-        augmentation_options_label = tk.Label(self.bg_frame, text="Options")
-        augmentation_options_label.place(x=5)
         MODES = [
             ("None", "none"),
             ("Color Detection", "color"),
-            ("MOG", "mog1"),
-            ("MOG2", "mog2"),
-            ("GMG", "gmg")
-        ]
+            ("Auto Detection", "mog2")]
         self.bg_aug = tk.StringVar()
         self.bg_aug.set("none")  # initialize
 
         for index, (text, mode) in enumerate(MODES):
             bg_aug_radio = tk.Radiobutton(self.bg_frame, text=text, variable=self.bg_aug, value=mode, \
                                           command=self.OnBGRadio)
-            bg_aug_radio.place(x=0, y=(index + 1) * 20)
+            bg_aug_radio.place(x=0, y=index * 20)
         # BG Color canvas
         self.sensitivity = 0
-        self.bgcolor_canvas = tk.Canvas(self.bg_frame, height = 20, width=40)
-        self.bgcolor_canvas.place(x=120, y=40)
+        self.bgcolor_canvas = tk.Canvas(self.bg_frame, height=20, width=40)
+        self.bgcolor_canvas.place(x=120, y=20)
 
         # Automatic BG detection checkbox
         self.fg_masks = None
@@ -263,17 +258,17 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         self.custom_bg = tk.IntVar()
         self.custom_bg_img = None
         self.custom_bg_check_box = tk.Checkbutton(self.bg_frame, text="custom bg", variable=self.custom_bg, command=self.OnBGRadio, state='disabled')
-        self.custom_bg_check_box.place(x=0, y=120)
+        self.custom_bg_check_box.place(x=0, y=60)
         self.bgcolor_rgb = []
 
         # Custom background button
         self.custom_bg_btn = tk.Button(self.bg_frame, text="bg", command=self.on_custom_bg, padx=5, pady=3)
         self.custom_bg_btn.config(width=4, state='disabled')
-        self.custom_bg_btn.place(x=120, y=120)
+        self.custom_bg_btn.place(x=120, y=60)
 
         # augment background button
         augment_bg_btn = tk.Button(self.bg_frame, text="Augment bg", command=self.export_augment_bg)
-        augment_bg_btn.place(x=35, y=153)
+        augment_bg_btn.place(x=35, y=90)
         #-----------------------------------------------------------------------------------------------------------------------------------------#
         # Export Frame
         self.export_frame = tk.LabelFrame(self.canvas, text="Export data as:", padx=5, pady=5)
@@ -491,6 +486,10 @@ class SampleApp(tk.Tk):  # inherit from Tk class
                 height, width = self.curr_image_raw.shape[:2]
                 self.fg_masks_mog2 = np.zeros((height, width, len(files)), dtype=np.uint8)
                 for frame_number, file in enumerate(sorted(files)):
+                    # TODO: notify user that work in progress
+                    #if frame_number%5 == 0:
+                    #    tkMessageBox.showinfo(title ='Modeling Background', message='Work in progress'+'.'*int(frame_number/5))
+                    #    self._root().update()
                     img = cv2.imread(os.path.join(self.frames_folder, file))
                     self.fg_masks_mog2[:, :, frame_number] = fgbg.apply(img)
                     # notify the user that work in progress
@@ -1455,7 +1454,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         options['parent'] = self.canvas
         options['title'] = 'Select Background'
         custom_bg_filename = tkFileDialog.askopenfilename(**options)
-        self.custom_bg_img = imread(custom_bg_filename)
+        self.custom_bg_img = cv2.imread(custom_bg_filename)
         if self.custom_bg_img is None:
             tkMessageBox.showerror(title='Bad file',
                                    message='Can not open the selected file')
