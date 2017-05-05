@@ -101,44 +101,44 @@ def export(output_folder, data_set, label_set, num_colors, num_scales, num_rotat
         if type_data == "image":
           # save original data (frame)
           if color:
-            imsave(image_folder_data+"/"+video_name+"_"+str(frame_index+1)+".png",data_set[example_number,0:3,:,:])
+            imsave(image_folder_data+"/"+video_name + "_{0:05d}.png".format(frame_index + 1),data_set[example_number,0:3,:,:])
           else:
-            imsave(image_folder_data+"/"+video_name+"_"+str(frame_index+1)+".png",data_set[example_number,0,:,:])
+            imsave(image_folder_data+"/"+video_name+ "_{0:05d}.png".format(frame_index + 1),data_set[example_number,0,:,:])
           # save original label (mask)
-          imsave(image_folder_labels+"/"+video_name+"_"+str(frame_index+1)+".png",label_set[example_number,0,:,:])
+          imsave(image_folder_labels+"/"+video_name+ "_{0:05d}.png".format(frame_index + 1),label_set[example_number,0,:,:])
           example_number += 1
 
           # save the contrasted data and labels if exist
           if num_colors!=0:
             for i in range(0,num_colors):
               if color:
-                imsave(image_folder_data+"/"+video_name+"_"+str(frame_index+1)+"_augment_color_"+str(i+1)+".png",data_set[example_number,0:3,:,:])
+                imsave(image_folder_data+"/"+video_name + "_{0:05d}".format(frame_index + 1)+"_augment_color_"+str(i+1)+".png",data_set[example_number,0:3,:,:])
               else:
-                imsave(image_folder_data+"/"+video_name+"_"+str(frame_index+1)+"_augment_color_"+str(i+1)+".png",data_set[example_number,0,:,:])
+                imsave(image_folder_data+"/"+video_name+"_{0:05d}".format(frame_index + 1)+"_augment_color_"+str(i+1)+".png",data_set[example_number,0,:,:])
               # save colored label (mask)
-              imsave(image_folder_labels+"/"+video_name+"_"+str(frame_index+1)+"_augment_color_"+str(i+1)+".png",label_set[example_number,0,:,:])
+              imsave(image_folder_labels+"/"+video_name+"_{0:05d}".format(frame_index + 1)+"_augment_color_"+str(i+1)+".png",label_set[example_number,0,:,:])
               example_number +=1
 
           # save the scaled data and labels if exist
           if num_scales!=0:
             for i in range(0,num_scales):
               if color:
-                imsave(image_folder_data+"/"+video_name+"_"+str(frame_index+1)+"_augment_scale_"+str(i+1)+".png",data_set[example_number,0:3,:,:])
+                imsave(image_folder_data+"/"+video_name+"_{0:05d}".format(frame_index + 1)+"_augment_scale_"+str(i+1)+".png",data_set[example_number,0:3,:,:])
               else:
-                imsave(image_folder_data+"/"+video_name+"_"+str(frame_index+1)+"_augment_scale_"+str(i+1)+".png",data_set[example_number,0,:,:])
+                imsave(image_folder_data+"/"+video_name+"_{0:05d}".format(frame_index + 1)+"_augment_scale_"+str(i+1)+".png",data_set[example_number,0,:,:])
               # save scaled label (mask)
-              imsave(image_folder_labels+"/"+video_name+"_"+str(frame_index+1)+"_augment_scale_"+str(i+1)+".png",label_set[example_number,0,:,:])
+              imsave(image_folder_labels+"/"+video_name+"_{0:05d}".format(frame_index + 1)+"_augment_scale_"+str(i+1)+".png",label_set[example_number,0,:,:])
               example_number +=1
 
           # save the rotated data and labels if exist
           if num_rotations!=0:
             for i in range(0,num_rotations):
               if color:
-                imsave(image_folder_data+"/"+video_name+"_"+str(frame_index+1)+"_augment_rot_"+str(i+1)+".png",data_set[example_number,0:3,:,:])
+                imsave(image_folder_data+"/"+video_name+"_{0:05d}".format(frame_index + 1)+"_augment_rot_"+str(i+1)+".png",data_set[example_number,0:3,:,:])
               else:
-                imsave(image_folder_data+"/"+video_name+"_"+str(frame_index+1)+"_augment_rot_"+str(i+1)+".png",data_set[example_number,0,:,:])
+                imsave(image_folder_data+"/"+video_name+"_{0:05d}".format(frame_index + 1)+"_augment_rot_"+str(i+1)+".png",data_set[example_number,0,:,:])
               # save rotated label (mask)
-              imsave(image_folder_labels+"/"+video_name+"_"+str(frame_index+1)+"_augment_rot_"+str(i+1)+".png",label_set[example_number,0,:,:])
+              imsave(image_folder_labels+"/"+video_name+"_{0:05d}".format(frame_index + 1)+"_augment_rot_"+str(i+1)+".png",label_set[example_number,0,:,:])
               example_number +=1
         #----------------------------------------------------------------------------------------------------------------------------------------
 
@@ -147,13 +147,13 @@ def export(output_folder, data_set, label_set, num_colors, num_scales, num_rotat
           # save original data (frame)
           if color:
             MM = {'PartMask': data_set[example_number,0:3,:,:]}
-            scipy.io.savemat(mat_folder_data+"/"+video_name+"_"+str(frame_index+1)+".mat", mdict = {'MM': MM}, do_compression = True)
+            scipy.io.savemat(mat_folder_data+"/"+video_name+"_{0:05d}".format(frame_index + 1)+".mat", mdict = {'MM': MM}, do_compression = True)
           else:
             MM = {'PartMask': data_set[example_number,0,:,:]}
-            scipy.io.savemat(mat_folder_data+"/"+video_name+"_"+str(frame_index+1)+".mat", mdict = {'MM': MM}, do_compression = True)
+            scipy.io.savemat(mat_folder_data+"/"+video_name+"_{0:05d}".format(frame_index + 1)+".mat", mdict = {'MM': MM}, do_compression = True)
           # save original label (mask)
           MM = {'PartMask': label_set[example_number,0,:,:]}
-          scipy.io.savemat(mat_folder_labels+"/"+video_name+"_"+str(frame_index+1)+".mat", mdict = {'MM': MM}, do_compression = True)
+          scipy.io.savemat(mat_folder_labels+"/"+video_name+"_{0:05d}".format(frame_index + 1)+".mat", mdict = {'MM': MM}, do_compression = True)
           example_number+=1
 
           # save the contrasted data and labels if exist
@@ -161,13 +161,13 @@ def export(output_folder, data_set, label_set, num_colors, num_scales, num_rotat
             for i in range(0,num_colors):
               if color:
                 MM = {'PartMask': data_set[example_number,0:3,:,:]}
-                scipy.io.savemat(mat_folder_data+"/"+video_name+"_"+str(frame_index+1)+"_augment_color_"+str(i+1)+".mat", mdict = {'MM': MM}, do_compression = True)
+                scipy.io.savemat(mat_folder_data+"/"+video_name+"_{0:05d}".format(frame_index + 1)+"_augment_color_"+str(i+1)+".mat", mdict = {'MM': MM}, do_compression = True)
               else:
                 MM = {'PartMask': data_set[example_number,0,:,:]}
-                scipy.io.savemat(mat_folder_data+"/"+video_name+"_"+str(frame_index+1)+"_augment_color_"+str(i+1)+".mat", mdict = {'MM': MM}, do_compression = True)
+                scipy.io.savemat(mat_folder_data+"/"+video_name+"_{0:05d}".format(frame_index + 1)+"_augment_color_"+str(i+1)+".mat", mdict = {'MM': MM}, do_compression = True)
               # save colored label (mask)
               MM = {'PartMask': label_set[example_number,0,:,:]}
-              scipy.io.savemat(mat_folder_labels+"/"+video_name+"_"+str(frame_index+1)+"_augment_color_"+str(i+1)+".mat", mdict = {'MM': MM}, do_compression = True)
+              scipy.io.savemat(mat_folder_labels+"/"+video_name+"_{0:05d}".format(frame_index + 1)+"_augment_color_"+str(i+1)+".mat", mdict = {'MM': MM}, do_compression = True)
               example_number +=1
 
           # save the scaled data and labels if exist
@@ -175,13 +175,13 @@ def export(output_folder, data_set, label_set, num_colors, num_scales, num_rotat
             for i in range(0,num_scales):
               if color:
                 MM = {'PartMask': data_set[example_number,0:3,:,:]}
-                scipy.io.savemat(mat_folder_data+"/"+video_name+"_"+str(frame_index+1)+"_augment_scale_"+str(i+1)+".mat", mdict = {'MM': MM}, do_compression = True)
+                scipy.io.savemat(mat_folder_data+"/"+video_name+"_{0:05d}".format(frame_index + 1)+"_augment_scale_"+str(i+1)+".mat", mdict = {'MM': MM}, do_compression = True)
               else:
                 MM = {'PartMask': data_set[example_number,0,:,:]}
-                scipy.io.savemat(mat_folder_data+"/"+video_name+"_"+str(frame_index+1)+"_augment_scale_"+str(i+1)+".mat", mdict = {'MM': MM}, do_compression = True)
+                scipy.io.savemat(mat_folder_data+"/"+video_name+"_{0:05d}".format(frame_index + 1)+"_augment_scale_"+str(i+1)+".mat", mdict = {'MM': MM}, do_compression = True)
               # save scaled label (mask)
               MM = {'PartMask': label_set[example_number,0,:,:]}
-              scipy.io.savemat(mat_folder_labels+"/"+video_name+"_"+str(frame_index+1)+"_augment_scale_"+str(i+1)+".mat", mdict = {'MM': MM}, do_compression = True)
+              scipy.io.savemat(mat_folder_labels+"/"+video_name+"_{0:05d}".format(frame_index + 1)+"_augment_scale_"+str(i+1)+".mat", mdict = {'MM': MM}, do_compression = True)
               example_number +=1
 
           # save the rotated data and labels if exist
@@ -189,13 +189,13 @@ def export(output_folder, data_set, label_set, num_colors, num_scales, num_rotat
             for i in range(0,num_rotations):
               if color:
                 MM = {'PartMask': data_set[example_number,0:3,:,:]}
-                scipy.io.savemat(mat_folder_data+"/"+video_name+"_"+str(frame_index+1)+"_augment_rot_"+str(i+1)+".mat", mdict = {'MM': MM}, do_compression = True)
+                scipy.io.savemat(mat_folder_data+"/"+video_name+"_{0:05d}".format(frame_index + 1)+"_augment_rot_"+str(i+1)+".mat", mdict = {'MM': MM}, do_compression = True)
               else:
                 MM = {'PartMask': data_set[example_number,0,:,:]}
-                scipy.io.savemat(mat_folder_data+"/"+video_name+"_"+str(frame_index+1)+"_augment_rot_"+str(i+1)+".mat", mdict = {'MM': MM}, do_compression = True)
+                scipy.io.savemat(mat_folder_data+"/"+video_name+"_{0:05d}".format(frame_index + 1)+"_augment_rot_"+str(i+1)+".mat", mdict = {'MM': MM}, do_compression = True)
               # save scaled label (mask)
               MM = {'PartMask': label_set[example_number,0,:,:]}
-              scipy.io.savemat(mat_folder_labels+"/"+video_name+"_"+str(frame_index+1)+"_augment_rot_"+str(i+1)+".mat", mdict = {'MM': MM}, do_compression = True)
+              scipy.io.savemat(mat_folder_labels+"/"+video_name+"_{0:05d}".format(frame_index + 1)+"_augment_rot_"+str(i+1)+".mat", mdict = {'MM': MM}, do_compression = True)
               example_number +=1
         #----------------------------------------------------------------------------------------------------------------------------------------
         # save as hdf5 files

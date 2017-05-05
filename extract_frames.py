@@ -22,7 +22,7 @@ def extract_frames_from_one_video(video_file, frames_path, fps):
     exit(1)
 
   #check if frames for this video and fps were already created
-  if os.path.exists(frames_video_name_fps + "_1.png"):
+  if os.path.exists(frames_video_name_fps + "_00001.png"):
     print "Warning: frames already created for " + video_file_name + " with fps: " + str(fps)
 
   else:
@@ -41,11 +41,13 @@ def extract_frames_from_one_video(video_file, frames_path, fps):
       # with the consecutive name  ... , 10034, 10035, ... in the frames_path
       os.system("mkdir " + new_path)
 
-      os.system("ffmpeg -i " + video_file + " -qscale:v 2 -r {} -f image2 '".format(fps)  + new_path + "%d.png'")
+      #eforce a specific dimention from the beginneg
+      os.system("ffmpeg -i " + video_file + " -vf scale=w=640:h=480:force_original_aspect_ratio=decrease -r {} -f image2 '".format(fps) + new_path + "%05d.png'")
+      #os.system("ffmpeg -i " + video_file + " -qscale:v 2 -r {} -f image2 '".format(fps) + new_path + "%05d.png'")
 
       counter = 1
       for f in os.listdir(new_path):
-        shutil.copy2(os.path.join(new_path, "{0}.png".format(counter)), (frames_video_name_fps + "_{0}.png".format(images_counter)))
+        shutil.copy2(os.path.join(new_path, "{0:05d}.png".format(counter)), (frames_video_name_fps + "_{0:05d}.png".format(images_counter)))
         images_counter += 1
         counter += 1
       os.system("rm -R " + new_path)
@@ -65,11 +67,11 @@ def extract_frames_from_one_video(video_file, frames_path, fps):
           # [changeable][optional]
           # 00:00:02 indicates number of seconds to take from starting point
           os.system("ffmpeg -i " + video_file + " -ss " + no_newline +
-            " -t 00:00:02 -qscale:v 2 -r {} -f image2 '".format(fps) + new_path + "%d.png'")
+            " -t 00:00:02 -qscale:v 2 -r {} -f image2 '".format(fps) + new_path + "%05d.png'")
 
           counter = 1
           for f in os.listdir(new_path):
-            shutil.copy2(os.path.join(new_path, "{0}.png".format(counter)), (frames_video_name_fps + "_{0}.png".format(images_counter)))
+            shutil.copy2(os.path.join(new_path, "{0:05d}.png".format(counter)), (frames_video_name_fps + "_{0:05d}.png".format(images_counter)))
             images_counter += 1
             counter += 1
           os.system("rm -R " + new_path)

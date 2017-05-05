@@ -4,6 +4,7 @@ import cv2
 import matplotlib.pyplot as plt
 import sys
 import os
+from shutil import rmtree
 from skimage import io
 from skimage import color
 from skimage.transform import rotate
@@ -13,7 +14,9 @@ import Image, ImageEnhance
 import random
 import imutils
 import scipy.ndimage
+from scipy.misc import imsave
 from compute_masks import load_annotationsations_from_file
+
 
 # script for augmenting the data(frames) and the labels(masks)
 
@@ -23,6 +26,7 @@ verbose = False
 
 extract_shape = False  # threshold for white background
 extract_th    = 253    # Threshold
+
 
 # function to calculate the mean over all frames
 def calculate_mean_all_frames(color, num_all_frames, frames_folder_path):
@@ -50,7 +54,67 @@ def calculate_mean_all_frames(color, num_all_frames, frames_folder_path):
   return mean
 
 
-def augment(augment_flag, TARGET_X_DIM, TARGET_Y_DIM, num_all_frames, annotation_folder_path, frames_folder_path, output_folder_path, num_scales=0, num_rotations=0, num_colors=0, color=False):
+def autobg_detection_add_custom(src, fg_mask, custom_bg, custom_bg_img):
+    output = cv2.bitwise_and(src, src, mask=fg_mask)
+    if custom_bg and custom_bg_img is not None:
+        bg_mask = cv2.bitwise_not(fg_mask)
+        height, width = output.shape[:2]
+        res_bg = cv2.resize(custom_bg_img, (width, height), interpolation=cv2.INTER_AREA)
+        output += cv2.bitwise_and(res_bg, res_bg, mask=bg_mask)
+    return output
+
+
+# function to remove image's background and augment a custom one
+def sub_bg_color_add_custom(src, bgcolor, sensitivity, custom_bg, custom_bg_img):
+    np_color = np.zeros((1, 1, 3), dtype='uint8')
+    np_color[0, 0, :] = bgcolor
+    bg_color_hue = cv2.cvtColor(np_color, cv2.COLOR_RGB2HSV)[0, 0, 0]
+    lower = bg_color_hue - sensitivity if bg_color_hue - sensitivity > -1 else 0
+    upper = bg_color_hue + sensitivity if bg_color_hue + sensitivity < 180 else 180
+    # convert the current image to hsv colorspace
+    img_hsv = cv2.cvtColor(src, cv2.COLOR_BGR2HSV)
+    # extract mask
+    bg_mask = cv2.inRange(img_hsv[:, :, 0], lower, upper)
+    fg_mask = cv2.bitwise_not(bg_mask)
+    output = cv2.bitwise_and(src, src, mask=fg_mask)
+    if custom_bg and custom_bg_img is not None:
+        height, width = output.shape[:2]
+        res_bg = cv2.resize(custom_bg_img, (width, height), interpolation=cv2.INTER_AREA)
+        output += cv2.bitwise_and(res_bg, res_bg, mask=bg_mask)
+    return (output, fg_mask, bg_mask)
+
+
+def augment_bg(method, fg_masks_mog2, bg_color, sensitivity, frames_folder_path, sb_bg_folder_path, custom_bg, custom_bg_img):
+
+    if method == '':
+      return False, None
+    elif method == 'color':
+        for root, dirs, files in os.walk(frames_folder_path):
+          # Init. the fg masks matrix
+          height, width = cv2.imread(os.path.join(frames_folder_path, files[0])).shape[:2]
+          fg_masks = np.zeros((height, width, len(files)), dtype=np.uint8)
+          for frame_number, file in enumerate(sorted(files)):
+            img = cv2.imread(os.path.join(frames_folder_path, file))
+            output, fg_masks[:,:,frame_number], _ = sub_bg_color_add_custom(img, bg_color, sensitivity, True, custom_bg_img)
+            cv2.imwrite(os.path.join(sb_bg_folder_path, file), output)
+            print "- Augment frame's {} bg done".format(frame_number+1)
+    elif method == 'mog2' and fg_masks_mog2 is not None:
+        for root, dirs, files in os.walk(frames_folder_path):
+          for frame_number, file in enumerate(sorted(files)):
+            img = cv2.imread(os.path.join(frames_folder_path, file))
+            output = autobg_detection_add_custom(img, fg_masks_mog2[:, :, frame_number], custom_bg, custom_bg_img)
+            cv2.imwrite(os.path.join(sb_bg_folder_path, file), output)
+            print "- Augment frame's {} bg done".format(frame_number+1)
+        fg_masks = fg_masks_mog2
+    return True, fg_masks
+
+def augment(augment_flag, TARGET_X_DIM, TARGET_Y_DIM, num_all_frames,
+            annotation_folder_path, frames_folder_path, output_folder_path,
+            num_scales=0, num_rotations=0, num_colors=0, use_seg_mask=False, seg_masks=None, color=False):
+
+  # augment background
+  if use_seg_mask:
+    frames_folder_path = os.path.join(frames_folder_path, os.pardir, 'aug_bg')
 
   # calculate the mean over all pixels in all frames
   mean_value = calculate_mean_all_frames(color, num_all_frames, frames_folder_path)
@@ -119,8 +183,8 @@ def augment(augment_flag, TARGET_X_DIM, TARGET_Y_DIM, num_all_frames, annotation
     print "--------------"
     print "-Video: {}\n".format(video_name)
     for frame_number, annotation_frame in enumerate(annotation_video):
-      frame_name = video_name+ "_" + str(frame_number+1) + ".png"
-      frame_path = os.path.join(frames_folder_path,frame_name)
+      frame_name = video_name+ "_{0:05d}.png".format(frame_number + 1)
+      frame_path = os.path.join(frames_folder_path, frame_name)
 
       # ignore data if frame is not annotated or the frame doesn't exist but its annotation exists
       if annotation_frame != 0 and os.path.exists(frame_path):
@@ -143,12 +207,18 @@ def augment(augment_flag, TARGET_X_DIM, TARGET_Y_DIM, num_all_frames, annotation
         height = frame.shape[0]
         width = frame.shape[1]
 
-        mask = np.zeros((height,width))
+        mask = np.zeros((height, width))
 
         # creating the mask array for the current frame
         # for each label in the current frame
         for label in range(0,len(annotation_frame)):
-          mask[annotation_frame[label][1]:annotation_frame[label][3], annotation_frame[label][0]:annotation_frame[label][2]] = annotation_frame[label][-1]
+          mask[annotation_frame[label][1]:annotation_frame[label][3],
+          annotation_frame[label][0]:annotation_frame[label][2]] = annotation_frame[label][-1]
+          # TODO: apply fg mask in addition to the bounding box.
+          # How to make sure the loaded label and the fg mask are for the same frame?!!!
+          if use_seg_mask:
+
+            mask = cv2.bitwise_and(mask, mask, mask=seg_masks[:,:, frame_number+1])
         #-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # 1- Color
         if num_colors != 0:
@@ -520,5 +590,8 @@ def augment(augment_flag, TARGET_X_DIM, TARGET_Y_DIM, num_all_frames, annotation
             print "-----------------------------------------------------------------------------------------------"
     annotated_frames_list.append(frames_annotated)
 
+  # remove directory of background subtracted images if exists
+  # if bg_sub:
+    # rmtree(sb_bg_folder_path)
 
   return data_set, label_set, num_colors, num_scales, num_rotations, video_names_list, annotated_frames_list, augment_flag
