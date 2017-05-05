@@ -256,7 +256,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         self.bgcolor_canvas.place(x=120, y=40)
 
         # Automatic BG detection checkbox
-        self.fg_masks_mog1 = None
+        self.fg_masks = None
         self.fg_masks_mog2 = None
 
         # Custom bg
@@ -426,7 +426,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       self.data_set, self.label_set, self.num_colors, self.num_scales, self.num_rotations, self.video_names_list, self.annotated_frames_list, self.augmentation_flag =\
           augment(self.augmentation_flag, downsample_x, downsample_y, self.total_num_of_frames, self.annotation_folder,
                   self.frames_folder, self.output_folder, num_scales=num_scales, num_rotations=num_rotations,
-                  num_colors=num_colors, use_seg_mask=self.use_augmented_bg, color=COLOR)
+                  num_colors=num_colors, use_seg_mask=self.use_augmented_bg, seg_masks=self.fg_masks, color=COLOR)
 
       if self.augmentation_flag == -1:
         self.augmentation_flag = 0
@@ -472,7 +472,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
           self.custom_bg_btn['state']='disabled'
           self.custom_bg_img = None
           self.augment_image = False
-
+          self.fg_masks = None
       if self.bg_aug.get() == 'color':
         if self.bgcolor_rgb == []:
             self.augment_image = True
@@ -1482,7 +1482,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
             sb_bg_folder_path = os.path.join(self.frames_folder, os.pardir, 'aug_bg')
             if not os.path.exists(sb_bg_folder_path):
                 os.mkdir(sb_bg_folder_path)
-            self.use_augmented_bg = augment_bg(self.bg_aug.get(), self.fg_masks_mog2, self.bgcolor_rgb, self.sensitivity,
+            self.use_augmented_bg, self.fg_masks = augment_bg(self.bg_aug.get(), self.fg_masks_mog2, self.bgcolor_rgb, self.sensitivity,
                                                self.frames_folder, sb_bg_folder_path, self.custom_bg.get(), self.custom_bg_img)
 
 if __name__ == "__main__":

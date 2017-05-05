@@ -84,32 +84,33 @@ def sub_bg_color_add_custom(src, bgcolor, sensitivity, custom_bg, custom_bg_img)
     return (output, fg_mask, bg_mask)
 
 
-def augment_bg(method, fg_masks, bg_color, sensitivity, frames_folder_path, sb_bg_folder_path, custom_bg, custom_bg_img):
+def augment_bg(method, fg_masks_mog2, bg_color, sensitivity, frames_folder_path, sb_bg_folder_path, custom_bg, custom_bg_img):
 
     if method == '':
-      return False
+      return False, None
     elif method == 'color':
         for root, dirs, files in os.walk(frames_folder_path):
-          for frame_number, file in enumerate(files):
+          # Init. the fg masks matrix
+          height, width = cv2.imread(os.path.join(frames_folder_path, files[0])).shape[:2]
+          fg_masks = np.zeros((height, width, len(files)), dtype=np.uint8)
+          for frame_number, file in enumerate(sorted(files)):
             img = cv2.imread(os.path.join(frames_folder_path, file))
-            output, _, _ = sub_bg_color_add_custom(img, bg_color, sensitivity, True,
-                                      custom_bg_img)
+            output, fg_masks[:,:,frame_number], _ = sub_bg_color_add_custom(img, bg_color, sensitivity, True, custom_bg_img)
             cv2.imwrite(os.path.join(sb_bg_folder_path, file), output)
             print "- Augment frame's {} bg done".format(frame_number+1)
-    elif method == 'mog2':
+    elif method == 'mog2' and fg_masks_mog2 is not None:
         for root, dirs, files in os.walk(frames_folder_path):
-          for frame_number, file in enumerate(files):
+          for frame_number, file in enumerate(sorted(files)):
             img = cv2.imread(os.path.join(frames_folder_path, file))
-            output = autobg_detection_add_custom(img, fg_masks[:,:,frame_number]
-                                                 , custom_bg, custom_bg_img)
+            output = autobg_detection_add_custom(img, fg_masks_mog2[:, :, frame_number], custom_bg, custom_bg_img)
             cv2.imwrite(os.path.join(sb_bg_folder_path, file), output)
             print "- Augment frame's {} bg done".format(frame_number+1)
-
-    return True
+        fg_masks = fg_masks_mog2
+    return True, fg_masks
 
 def augment(augment_flag, TARGET_X_DIM, TARGET_Y_DIM, num_all_frames,
             annotation_folder_path, frames_folder_path, output_folder_path,
-            num_scales=0, num_rotations=0, num_colors=0, use_seg_mask=False, color=False):
+            num_scales=0, num_rotations=0, num_colors=0, use_seg_mask=False, seg_masks=None, color=False):
 
   # augment background
   if use_seg_mask:
@@ -183,7 +184,7 @@ def augment(augment_flag, TARGET_X_DIM, TARGET_Y_DIM, num_all_frames,
     print "-Video: {}\n".format(video_name)
     for frame_number, annotation_frame in enumerate(annotation_video):
       frame_name = video_name+ "_{0:05d}.png".format(frame_number + 1)
-      frame_path = os.path.join(frames_folder_path,frame_name)
+      frame_path = os.path.join(frames_folder_path, frame_name)
 
       # ignore data if frame is not annotated or the frame doesn't exist but its annotation exists
       if annotation_frame != 0 and os.path.exists(frame_path):
@@ -206,18 +207,18 @@ def augment(augment_flag, TARGET_X_DIM, TARGET_Y_DIM, num_all_frames,
         height = frame.shape[0]
         width = frame.shape[1]
 
-        mask = np.zeros((height,width))
+        mask = np.zeros((height, width))
 
         # creating the mask array for the current frame
         # for each label in the current frame
         for label in range(0,len(annotation_frame)):
-          label_mask = box_mask = annotation_frame[label][-1]
+          mask[annotation_frame[label][1]:annotation_frame[label][3],
+          annotation_frame[label][0]:annotation_frame[label][2]] = annotation_frame[label][-1]
           # TODO: apply fg mask in addition to the bounding box.
           # How to make sure the loaded label and the fg mask are for the same frame?!!!
-          #if use_seg_mask:
-            #label_mask = cv2.bitwise_and(box_mask, box_mask, mask=seg_masks[:,:, frame_number])
-          mask[annotation_frame[label][1]:annotation_frame[label][3], annotation_frame[label][0]:annotation_frame[label][2]] = label_mask
+          if use_seg_mask:
 
+            mask = cv2.bitwise_and(mask, mask, mask=seg_masks[:,:, frame_number+1])
         #-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # 1- Color
         if num_colors != 0:
