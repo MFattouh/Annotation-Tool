@@ -20,7 +20,8 @@ from compute_masks import create_mask_for_image # mask for single image
 from augmentation import *
 from export_data import export
 
-COLOR = False
+COLOR = False       # work with color images
+mimic_color = True; # mimic rgb export even though we have greyscale images to fit Caffe input shape
 
 class SampleApp(tk.Tk):  # inherit from Tk class
     '''Illustrate how to drag items on a Tkinter canvas'''
@@ -32,7 +33,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         ###### GUI #####
         self.title("Data annotation")
         # create a canvas
-        self.canvas = tk.Canvas(width=1400, height=640)
+        self.canvas = tk.Canvas(width=1500, height=640)
         self.canvas.pack(fill="both", expand=True)
 
         self.menubar = tk.Menu(self)
@@ -415,29 +416,49 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         else:
           num_scales = int(self.scale_rand_num.get())
 
-      downsample_x = 300
+      downsample_x = 300 # FCN input size (300x300x3)
       downsample_y = 300
 
       self.data_set, self.label_set, self.num_colors, self.num_scales, self.num_rotations, self.video_names_list, self.annotated_frames_list, self.augmentation_flag =\
           augment(self.augmentation_flag, downsample_x, downsample_y, self.total_num_of_frames, self.annotation_folder,
                   self.frames_folder, self.output_folder, num_scales=num_scales, num_rotations=num_rotations,
-                  num_colors=num_colors, use_seg_mask=self.use_augmented_bg, seg_masks=self.fg_masks, color=COLOR)
+                  num_colors=num_colors, use_seg_mask=self.use_augmented_bg, seg_masks=self.fg_masks, color=COLOR, mimic_color=mimic_color)
 
       if self.augmentation_flag == -1:
         self.augmentation_flag = 0
         tkMessageBox.showinfo(title="Info", message="No annotation models exist")
         return
 
-      tkMessageBox.showinfo(title="Info", message="Augmentation done !")
+      tkMessageBox.showinfo(title="Info", message="Augmentation done!")
 
 
     def export_fun(self,type_data):
+      print "export data...";
+      #print type_data;
       if self.augmentation_flag == 0:
-        tkMessageBox.showinfo(title="Info",message="Augment data first")
-        return
+        #tkMessageBox.showinfo(title="Info",message="Augment data first")
+        #return
+        print "data was not augmented";  
+        num_scales = 0;
+        num_rotations = 0;
+        num_colors = 0;
+      if self.bg_aug.get() == 'none':
+        print "no BG subtraction or model has been applied";   
+        print "Note: mean subtraction is always applied"; 
+        self.fg_masks = None;
+        self.use_augmented_bg = False;
+        self.augment_image = False;
+        downsample_x = 300;
+        downsample_y = 300;
 
-      export(self.output_folder, self.data_set, self.label_set, self.num_colors, self.num_scales, self.num_rotations, self.video_names_list, self.annotated_frames_list, type_data, COLOR)
-      tkMessageBox.showinfo(title="Info",message="Data exported !")
+      self.data_set, self.label_set, self.num_colors, self.num_scales, self.num_rotations, self.video_names_list, self.annotated_frames_list, self.augmentation_flag =\
+          augment(self.augmentation_flag, downsample_x, downsample_y, self.total_num_of_frames, self.annotation_folder,
+                  self.frames_folder, self.output_folder, num_scales=num_scales, num_rotations=num_rotations,
+                  num_colors=num_colors, use_seg_mask=self.use_augmented_bg, seg_masks=self.fg_masks, color=COLOR, mimic_color=mimic_color)
+
+      export(self.output_folder, self.data_set, self.label_set, self.num_colors, self.num_scales, self.num_rotations, self.video_names_list, self.annotated_frames_list, type_data, COLOR, mimic_color=mimic_color)
+      print "-done=- data exported"
+      tkMessageBox.showinfo(title="Info",message="Data exported!")
 
     def check_augmentation_boxes(self):
       if self.rotation.get():
@@ -468,6 +489,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
           self.custom_bg_img = None
           self.augment_image = False
           self.fg_masks = None
+	  self.use_augmented_bg = False
       if self.bg_aug.get() == 'color':
         if self.bgcolor_rgb == []:
             self.augment_image = True
@@ -1498,6 +1520,9 @@ if __name__ == "__main__":
   parser.add_argument("-ff", dest = "frames_folder", type = str,
           help = "path to frame folder (pass if no extraction needed)")
   args = parser.parse_args()
+  # check if complete argument list was given 
+  if args.main_folder is None: #  or  args.videos is None or args.output_folder is None
+          print "\n\nNot enough command line options, please call main.py -h\n\n";
 
   from skimage import io # image read and conversion to array # had to import it here (conflicts with the args passed)
   app = SampleApp()

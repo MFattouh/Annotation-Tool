@@ -85,7 +85,6 @@ def sub_bg_color_add_custom(src, bgcolor, sensitivity, custom_bg, custom_bg_img)
 
 
 def augment_bg(method, fg_masks_mog2, bg_color, sensitivity, frames_folder_path, sb_bg_folder_path, custom_bg, custom_bg_img):
-
     if method == '':
       return False, None
     elif method == 'color':
@@ -110,10 +109,11 @@ def augment_bg(method, fg_masks_mog2, bg_color, sensitivity, frames_folder_path,
 
 def augment(augment_flag, TARGET_X_DIM, TARGET_Y_DIM, num_all_frames,
             annotation_folder_path, frames_folder_path, output_folder_path,
-            num_scales=0, num_rotations=0, num_colors=0, use_seg_mask=False, seg_masks=None, color=False):
+            num_scales=0, num_rotations=0, num_colors=0, use_seg_mask=False, seg_masks=None, color=False , mimic_color=False):
 
   # augment background
   if use_seg_mask:
+    print "BG augmentation!";
     frames_folder_path = os.path.join(frames_folder_path, os.pardir, 'aug_bg')
 
   # calculate the mean over all pixels in all frames
@@ -153,6 +153,8 @@ def augment(augment_flag, TARGET_X_DIM, TARGET_Y_DIM, num_all_frames,
   # adding number of augmentations
   if num_colors != 0 or num_scales != 0 or num_rotations != 0:
     max_examples = max_examples + max_examples * (num_rotations + num_colors + num_scales)
+  else: 
+    print "no augmentation";
 
 
   # initialize arrays for the data(frames) and the labels(masks)
@@ -160,8 +162,12 @@ def augment(augment_flag, TARGET_X_DIM, TARGET_Y_DIM, num_all_frames,
     colorstr = "_color"
     data_set = np.zeros((max_examples,3,TARGET_Y_DIM,TARGET_X_DIM),dtype=np.float32)
   else:
-    colorstr = ""
-    data_set = np.zeros((max_examples,1,TARGET_Y_DIM,TARGET_X_DIM),dtype=np.float32)
+    if mimic_color:
+      colorstr = "_mimiccolor"
+      data_set = np.zeros((max_examples,3,TARGET_Y_DIM,TARGET_X_DIM),dtype=np.float32)
+    else:
+      colorstr = ""
+      data_set = np.zeros((max_examples,1,TARGET_Y_DIM,TARGET_X_DIM),dtype=np.float32)
   label_set = np.zeros((max_examples,1,TARGET_MASK_Y_DIM,TARGET_MASK_X_DIM),dtype=np.float32)
 
   print "Data set size:" ,data_set.shape
@@ -198,7 +204,6 @@ def augment(augment_flag, TARGET_X_DIM, TARGET_Y_DIM, num_all_frames,
           frame[:,:,0] = frame[:,:,0] - mean_value[0]
           frame[:,:,1] = frame[:,:,1] - mean_value[1]
           frame[:,:,2] = frame[:,:,2] - mean_value[2]
-
         else:
           frame = cv2.imread(frame_path,0)
           # mean substraction
@@ -481,8 +486,8 @@ def augment(augment_flag, TARGET_X_DIM, TARGET_Y_DIM, num_all_frames,
           print "-Mask shape before: ",mask.shape
 
         # downsampling the frame and the mask to the new dimension
-        frame = cv2.resize(frame,(TARGET_X_DIM,TARGET_Y_DIM))
-        mask = cv2.resize(mask,(TARGET_MASK_X_DIM,TARGET_MASK_Y_DIM))
+        frame = cv2.resize(frame,(TARGET_X_DIM,TARGET_Y_DIM),interpolation=cv2.INTER_AREA); 
+        mask = cv2.resize(mask,(TARGET_MASK_X_DIM,TARGET_MASK_Y_DIM),interpolation=cv2.INTER_NEAREST);
 
         # shapes of the frame and the mask after downsampling
         if verbose:
@@ -490,6 +495,7 @@ def augment(augment_flag, TARGET_X_DIM, TARGET_Y_DIM, num_all_frames,
           print "-Mask shape after: ", mask.shape
 
         # cast to float32 for Caffe
+        mask = mask.astype(dtype=np.int32);  # first get away all interpolated category values... 
         mask = mask.astype(dtype=np.float32)
         frame = frame.astype(dtype=np.float32)
 
@@ -555,7 +561,13 @@ def augment(augment_flag, TARGET_X_DIM, TARGET_Y_DIM, num_all_frames,
             fid += num_rotations
 
         else:
-          data_set[fid,0,:,:] = frame
+          if mimic_color: 
+           print "NOTE: Augmentation not yet implemented with mimic color option!";
+           data_set[fid,0,:,:] = frame
+           data_set[fid,1,:,:] = frame
+           data_set[fid,2,:,:] = frame
+          else:
+           data_set[fid,0,:,:] = frame
           label_set[fid,0,:,:] = mask
           fid += 1
 
