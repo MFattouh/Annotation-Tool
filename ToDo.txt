@@ -1,0 +1,18 @@
+bugs:
+- number annotated frames should be the total number over all frames of all videos, at the moment only current video info shown
+- correlation tracker should never suggest BBox outside annotation window
+- still possible to move the video frame instead the bounding box
+- option -mf will still set frames, masks and annotation folder in the
+calling directory.. I think default should be to work then in -mf
+exclusively
+ 
+
+extensions:
+- export annotation window as seen in the tool (scrrenshots of annotation -> video presentation)
+- check that in augmentation.py the cast form u8int to float of frames does not interferre with data augmentation (not yet check -> see bugfix 2017-05-19)
+- add a flag to mimic rgb color in case of greyscale image  // (e.g. checkbox in case of greyscale image)
+- add a flag to switch on/off mean subtraction
+- implementation of key-point option (whould be sufficent to take center of BBox as keypoint)
+- keep track wether augmentation was already pressed (to avoid doing the same work when pressing output) or values have been changed after augmentation has been pressed 
+
+

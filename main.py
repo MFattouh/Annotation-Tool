@@ -444,7 +444,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         num_colors = 0;
       if self.bg_aug.get() == 'none':
         print "no BG subtraction or model has been applied";   
-        print "Note: mean subtraction is always applied"; 
+        print "note: Mean subtraction is always applied or set flag in augmentation.py"; 
         self.fg_masks = None;
         self.use_augmented_bg = False;
         self.augment_image = False;

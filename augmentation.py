@@ -26,6 +26,7 @@ verbose = False
 
 extract_shape = False  # threshold for white background
 extract_th    = 253    # Threshold
+mean_sub      = True  # mean subtraction yes/no
 
 
 # function to calculate the mean over all frames
@@ -116,8 +117,16 @@ def augment(augment_flag, TARGET_X_DIM, TARGET_Y_DIM, num_all_frames,
     print "BG augmentation!";
     frames_folder_path = os.path.join(frames_folder_path, os.pardir, 'aug_bg')
 
-  # calculate the mean over all pixels in all frames
-  mean_value = calculate_mean_all_frames(color, num_all_frames, frames_folder_path)
+  if mean_sub:
+    # calculate the mean over all pixels in all frames   
+    mean_value = calculate_mean_all_frames(color, num_all_frames, frames_folder_path)
+    print "do mean subtraction with mean = ",mean_value
+  else:
+    if color:
+      mean_value = [0,0,0]
+    else:
+      mean_value = [0]
+    print "no mean subtraction"
 
   if extract_shape:
     if extract_th - mean_value <= 1:
@@ -206,8 +215,15 @@ def augment(augment_flag, TARGET_X_DIM, TARGET_Y_DIM, num_all_frames,
           frame[:,:,2] = frame[:,:,2] - mean_value[2]
         else:
           frame = cv2.imread(frame_path,0)
+          # cast to float32 for Caffe & to allow negative numbers for mean subtraction
+          # frame[np.where(frame<=mean_value[0])] = mean_value  # otherwise prevent variable overrun!!! 
+          frame = frame.astype(dtype=np.float32)
           # mean substraction
-          frame[:,:] = frame[:,:] - mean_value[0]
+          frame[:,:] -= mean_value[0]
+          if verbose:
+            print "image shape:  ", np.shape(frame)
+            print "image values: ", frame.itemsize
+            print "image values: ", type(frame[0,0])
 
         height = frame.shape[0]
         width = frame.shape[1]
@@ -497,7 +513,7 @@ def augment(augment_flag, TARGET_X_DIM, TARGET_Y_DIM, num_all_frames,
         # cast to float32 for Caffe
         mask = mask.astype(dtype=np.int32);  # first get away all interpolated category values... 
         mask = mask.astype(dtype=np.float32)
-        frame = frame.astype(dtype=np.float32)
+        #frame = frame.astype(dtype=np.float32)  # this cast have been applied at the beginning due to the variable overrun when applying mean subtraction in case of uint8
 
         # don't understand (why 0 ?) # (not implemented for the augmentation options)
         #if extract_shape:

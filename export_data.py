@@ -4,7 +4,7 @@ import scipy.io
 import numpy as np
 import h5py  # HDF5
 
-def export(output_folder, data_set, label_set, num_colors, num_scales, num_rotations, video_names_list, annotated_frames_list, type_data, color):
+def export(output_folder, data_set, label_set, num_colors, num_scales, num_rotations, video_names_list, annotated_frames_list, type_data, color, mimic_color):
 
   # ----------------------------------------------------------------------------------
   # creating mask folders if they doesn't exist
@@ -72,8 +72,12 @@ def export(output_folder, data_set, label_set, num_colors, num_scales, num_rotat
           hdf5_label_rot_set = np.zeros((num_rotations*example_this_video,1,row,col),dtype=np.float32)
           index_rot_data = 0
 
-      else:
-        hdf5_data_set = np.zeros((example_this_video,1,row,col),dtype=np.float32)
+      else:  # no color 
+        if mimic_color:
+          hdf5_data_set = np.zeros((example_this_video,3,row,col),dtype=np.float32)
+          print "Note: Export with mimic_color option -> no augmentation yet implemented!";
+        else:
+          hdf5_data_set = np.zeros((example_this_video,1,row,col),dtype=np.float32)
         hdf5_label_set = np.zeros((example_this_video,1,row,col),dtype=np.float32)
         index_original_data = 0
 
@@ -100,7 +104,7 @@ def export(output_folder, data_set, label_set, num_colors, num_scales, num_rotat
         # save as images
         if type_data == "image":
           # save original data (frame)
-          if color:
+          if color or mimic_color:
             imsave(image_folder_data+"/"+video_name + "_{0:05d}.png".format(frame_index + 1),data_set[example_number,0:3,:,:])
           else:
             imsave(image_folder_data+"/"+video_name+ "_{0:05d}.png".format(frame_index + 1),data_set[example_number,0,:,:])
@@ -202,7 +206,7 @@ def export(output_folder, data_set, label_set, num_colors, num_scales, num_rotat
         if type_data == "hdf5":
 
           # save original data
-          if color:
+          if color or mimic_color:
             hdf5_data_set[index_original_data,0:3,:,:] = data_set[example_number,0:3,:,:]
           else:
             hdf5_data_set[index_original_data,0,:,:] = data_set[example_number,0,:,:]
