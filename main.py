@@ -187,6 +187,21 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         self.keypoints = tk.LabelFrame(self.canvas, text="Keypoints", padx=5, pady=5)
         self.canvas.create_window(810, 300, anchor="nw", window=self.keypoints, width=240, height=40)
 
+        self.kp1 = tk.IntVar()
+        kp1_check_box = tk.Checkbutton(self.keypoints, text="kp1", variable=self.kp1).pack(side="left")
+
+        self.kp2 = tk.IntVar()
+        kp2_check_box = tk.Checkbutton(self.keypoints, text="kp2", variable=self.kp2).pack(side="left")
+
+        self.kp3 = tk.IntVar()
+        kp3_check_box = tk.Checkbutton(self.keypoints, text="kp3", variable=self.kp3).pack(side="left")
+
+        self.kp4 = tk.IntVar()
+        kp4_check_box = tk.Checkbutton(self.keypoints, text="kp4", variable=self.kp4).pack(side="left")
+
+        self.kp5 = tk.IntVar()
+        kp5_check_box = tk.Checkbutton(self.keypoints, text="kp5", variable=self.kp5).pack(side="left")
+
         #------------------------------------------------------------------------------------------------------------------------------------------#
         # Augmentation frame
         self.augmentation_frame = tk.LabelFrame(self.canvas, text="Augmentation")
