@@ -202,6 +202,12 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         self.kp5 = tk.IntVar()
         kp5_check_box = tk.Checkbutton(self.keypoints, text="kp5", variable=self.kp5).pack(side="left")
 
+        # Holds keypoint annotation values
+        self.kp_ann = dict()
+        # Holds current or defalut values of keypoint annotation for the current frame
+        self.curr_kp_ann = [[False, 0, 0], [False, 0, 0], [False, 0, 0], [False, 0, 0], [False, 0, 0]]
+        # Holds latest values available from previous annotation for the current frame
+        self.latest_kp_ann = [[False, 0, 0], [False, 0, 0], [False, 0, 0], [False, 0, 0], [False, 0, 0]]
         #------------------------------------------------------------------------------------------------------------------------------------------#
         # Augmentation frame
         self.augmentation_frame = tk.LabelFrame(self.canvas, text="Augmentation")
@@ -1154,29 +1160,45 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         return
 
       # don"t save if there is not at least one annotated frame
-      number_of_annotaded_frames = sum([int(i !=0) for i in self.rectangle_frame_pairs])
-      if number_of_annotaded_frames == 0:
-        tkMessageBox.showinfo(title = "Warning", message = "0 annotations!\nModel not saved!")
-        return
+      save_bbox_ann = sum([int(i !=0) for i in self.rectangle_frame_pairs]) != 0
+      if save_bbox_ann:
+        # check if there is already a model
+        result = "yes"
+        model_annot_name = os.path.join(self.annotation_folder, self.video_name + ".model")
+        if os.path.exists(model_annot_name):
+            result = tkMessageBox.askquestion("Overwrite", "Are you sure?", icon = "warning")
 
-
-      # check if there is already a model
-      result = "yes"
-      model_annot_name = os.path.join(self.annotation_folder, self.video_name + ".model")
-      if os.path.exists(model_annot_name):
-        result = tkMessageBox.askquestion("Overwrite", "Are you sure?", icon = "warning")
-
-      if result == "yes":
-        f = file(model_annot_name, 'wb')
-        cPickle.dump(self.rectangle_frame_pairs, f, protocol = cPickle.HIGHEST_PROTOCOL)
-        f.close()
-        tkMessageBox.showinfo(title = "Info", message = "Annotation model saved")
+        if result == "yes":
+            f = file(model_annot_name, 'wb')
+            cPickle.dump(self.rectangle_frame_pairs, f, protocol = cPickle.HIGHEST_PROTOCOL)
+            f.close()
+            tkMessageBox.showinfo(title = "Info", message = "Annotation model saved")
+        else:
+            tkMessageBox.showinfo(title = "Info", message = "Annotation model not saved")
       else:
-        tkMessageBox.showinfo(title = "Info", message = "Annotation model not saved")
+          tkMessageBox.showinfo(title="Warning", message="0 annotations!\nModel not saved!")
 
+      # Save keypoint annotation model
+      save_kp_ann = len(self.kp_ann) != 0
+      if save_kp_ann:
+        # check if there is already a Keypoint annotation model
+        result = "yes"
+        kp_model_annot_name = os.path.join(self.annotation_folder, self.video_name + "_keypionts_annotation.model")
+        if os.path.exists(kp_model_annot_name):
+            result = tkMessageBox.askquestion("Overwrite", "Are you sure?", icon="warning")
 
+        if result == "yes":
+            f = file(kp_model_annot_name, 'wb+')
+            cPickle.dump(self.kp_ann, f, protocol=cPickle.HIGHEST_PROTOCOL)
+            f.close()
+            tkMessageBox.showinfo(title="Info", message="Keypoint annotation model saved")
+        else:
+            tkMessageBox.showinfo(title="Info", message="Keypoint annotation model not saved")
+      else:
+          tkMessageBox.showinfo(title="Warning", message="0 Keypoint annotations!\nModel not saved!")
 
     def load(self):
+      # TODO: load keypoint annotaions from pickle file
       #check if there is a model for the current video frames
       model_annot_name = os.path.join(self.annotation_folder, self.video_name + ".model")
       if not os.path.exists(model_annot_name):
