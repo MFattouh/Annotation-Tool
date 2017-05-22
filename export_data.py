@@ -3,6 +3,7 @@ from scipy.misc import imsave
 import scipy.io
 import numpy as np
 import h5py  # HDF5
+import csv
 
 def export(output_folder, data_set, label_set, num_colors, num_scales, num_rotations, video_names_list, annotated_frames_list, type_data, color, mimic_color):
 
@@ -305,3 +306,12 @@ def export(output_folder, data_set, label_set, num_colors, num_scales, num_rotat
         f.close()
 
     print "|done"
+
+def export_keypoints(kp_ann, annotation_folder):
+  with open(os.path.join(annotation_folder, 'keypoints_annotation.csv'), 'wb+') as f:
+    wr = csv.writer(f, quoting=csv.QUOTE_ALL)
+    for key in kp_ann:
+      annotations = [key]
+      annotations = annotations + [inner for outer in kp_ann[key] for inner in outer]
+      wr.writerow(annotations)
+
