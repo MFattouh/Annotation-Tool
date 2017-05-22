@@ -56,7 +56,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 
         # Video label window
         self.video_info_label = tk.LabelFrame(self.canvas, text = "Video information", padx=5, pady=5)
-        self.canvas.create_window(800,320, anchor = "nw", window = self.video_info_label, width=400, height=90)
+        self.canvas.create_window(1110, 370, anchor = "nw", window = self.video_info_label, width=400, height=90)
         tk.Label(self.video_info_label, text = "Video: No info").pack()
         tk.Label(self.video_info_label, text = "Video: No info").pack()
 
@@ -70,7 +70,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 
         # Frame label window
         self.frame_info_label = tk.LabelFrame(self.canvas, text="Frame information", padx=5, pady=5)
-        self.canvas.create_window(800, 430, anchor="nw", window=self.frame_info_label, width=400, height=70)
+        self.canvas.create_window(800, 370, anchor="nw", window=self.frame_info_label, width=260, height=70)
         tk.Label(self.frame_info_label, text="Frame: No info").pack()
         tk.Label(self.frame_info_label, text="Frame: No info").pack()
 
@@ -104,7 +104,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         #------------------------------------------------------------------------------------------------------------------------------------------#
         # Annotation options window
         self.annotation_options_label = tk.LabelFrame(self.canvas, text = "Annotation options", padx = 5, pady =5)
-        self.canvas.create_window(800, 10,anchor = "nw", window = self.annotation_options_label,width = 260,height = 305)
+        self.canvas.create_window(800, 10,anchor = "nw", window = self.annotation_options_label,width = 260,height = 345)
 
         self.shape = tk.IntVar()
         #set rectangle as default choice
@@ -181,6 +181,11 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         self.show_mask_flag = tk.IntVar()
         check_box_mask = tk.Checkbutton(self.annotation_options_label, text="Show labels only", variable=self.show_mask_flag, command=self.show_masks)
         check_box_mask.place(x=0, y=250)
+
+        # -------------------
+        # Keypoints frame
+        self.keypoints = tk.LabelFrame(self.canvas, text="Keypoints", padx=5, pady=5)
+        self.canvas.create_window(810, 300, anchor="nw", window=self.keypoints, width=240, height=40)
 
         #------------------------------------------------------------------------------------------------------------------------------------------#
         # Augmentation frame
