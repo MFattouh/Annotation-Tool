@@ -23,6 +23,8 @@ from export_data import export
 COLOR = False       # work with color images
 mimic_color = True; # mimic rgb export even though we have greyscale images to fit Caffe input shape
 debug = False;      # debug information
+#debug = True;      # debug information
+
 
 class SampleApp(tk.Tk):  # inherit from Tk class
     '''Illustrate how to drag items on a Tkinter canvas'''
@@ -645,8 +647,8 @@ class SampleApp(tk.Tk):  # inherit from Tk class
            x_pos_br = -self.img_start_x +rec_x_center+0.5*rec_width;
            y_pos_ul = -self.img_start_y +rec_y_center-.5*rec_height;
            y_pos_br = -self.img_start_y +rec_y_center+0.5*rec_height;
-           draw.rectangle((x_pos_ul,y_pos_ul,x_pos_br,y_pos_br),outline=self.label_colors[i+1]);
-           draw.rectangle((x_pos_ul+1,y_pos_ul+1,x_pos_br-1,y_pos_br-1),outline=self.label_colors[i+1]);
+           draw.rectangle((x_pos_ul,y_pos_ul,x_pos_br,y_pos_br),outline=self.label_colors[label]);
+           draw.rectangle((x_pos_ul+1,y_pos_ul+1,x_pos_br-1,y_pos_br-1),outline=self.label_colors[label]);
            if debug: 
              print rec_x_center,",",rec_y_center,",",rec_height,",",rec_width," Image Position: ",self.img_start_x,",",self.img_start_y
         if self.output_screenshot.get() == 1:
