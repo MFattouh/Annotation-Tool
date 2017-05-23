@@ -207,8 +207,8 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         self.kp_ann = dict()
         # Holds current or defalut values of keypoint annotation for the current frame
         self.curr_kp_ann = [[False, 0, 0], [False, 0, 0], [False, 0, 0], [False, 0, 0], [False, 0, 0]]
-        # Holds latest values available from previous annotation for the current frame
-        self.latest_kp_ann = [[False, 0, 0], [False, 0, 0], [False, 0, 0], [False, 0, 0], [False, 0, 0]]
+        # Constant holds the defalut keypoint annotation values
+        self.default_kp_ann = [[False, 0, 0], [False, 0, 0], [False, 0, 0], [False, 0, 0], [False, 0, 0]]
         #------------------------------------------------------------------------------------------------------------------------------------------#
         # Augmentation frame
         self.augmentation_frame = tk.LabelFrame(self.canvas, text="Augmentation")
@@ -396,6 +396,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         # load the first video frames
         self.img_num = 0
         self.load_frames(self.list_of_videos[self.video_index])
+        self.curr_img_name = self.img_num_to_name(self.video_name, self.img_num)
 
 
     def show_masks(self):
@@ -893,7 +894,9 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       # if no parameter is passed set to self.img_num + 1
       if (image_num == -1):
         image_num = self.img_num
-      f = os.path.join(self.frames_folder, self.video_name + "_{0:05d}.png".format(image_num+1))
+
+      img_name = self.img_num_to_name(self.video_name, image_num+1)
+      f = os.path.join(self.frames_folder, img_name)
       output = src = cv2.imread(f)
       #output = src = cv2.resize(cv2.imread(f), (600, 400), interpolation=cv2.INTER_AREA)
       # check if augment background
@@ -924,7 +927,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       return coords_relative
 
     def change_image(self):
-
+      self.curr_img_name = self.img_num_to_name(self.video_name, self.img_num)
       self.read_image_from_file()
       #TODO: put the bgaug func here and replace function calls to change displaed image with this method
       self.create_photo_from_raw()
@@ -1319,6 +1322,14 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 
       self.show_masks()
 
+      # check if this image has Keypoint annotations
+      self.curr_img_name = self.img_num_to_name(self.video_name, self.img_num)
+      if self.curr_img_name in self.kp_ann:
+          self.curr_kp_ann = self.kp_ann[self.curr_img_name]
+      else:
+          self.curr_kp_ann = self.default_kp_ann
+
+      self.update_all_kp_poses()
 
     def leftKey(self, event):
       self.img_num -=1
@@ -1355,6 +1366,15 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         self.update_image_annotated_with_label(label_index)
 
       self.show_masks()
+
+      # check if this image has Keypoint annotations
+      self.curr_img_name = self.img_num_to_name(self.video_name, self.img_num)
+      if self.curr_img_name in self.kp_ann:
+          self.curr_kp_ann = self.kp_ann[self.curr_img_name]
+      else:
+          self.curr_kp_ann = self.default_kp_ann
+
+      self.update_all_kp_poses()
 
     def get_label_index_in_list(self):
        # number of previous labels for this image
@@ -1412,6 +1432,12 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         else:
           self.rectangle_frame_pairs[self.img_num].append(coords_relative)
 
+      # save keypoint annotaions:
+      if self.curr_kp_ann != self.default_kp_ann:
+          self.kp_ann[self.curr_img_name] = self.curr_kp_ann
+
+      next_kp_ann = self.curr_kp_ann
+
       if (self.flag == 0):
         #proveri uste ednas koordinatite
         self.tracker.start_track(self.curr_image_raw, dlib.rectangle(coords_relative[0],coords_relative[1],coords_relative[2],coords_relative[3]))
@@ -1419,6 +1445,10 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         self.flag = 1
 
       else:
+        # find current center of bbox
+        curr_bbox = self.tracker.get_position()
+        x = int(curr_bbox.right() - curr_bbox.left() / 2)
+        y = int(curr_bbox.top() - curr_bbox.bottom() / 2)
         #update filter
         self.tracker.update(self.curr_image_raw, dlib.rectangle(coords_relative[0],coords_relative[1],coords_relative[2],coords_relative[3]))
 
@@ -1427,6 +1457,21 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         curr_position = self.get_coord_rectangle()
 
         self.canvas.move(self.polygon_id[0], -curr_position[0]+rel_position.left(), -curr_position[1]+rel_position.top())
+        # update keypoint annotations
+        # Check if next frame annotations have default values
+        if next_kp_ann == self.default_kp_ann:
+            for kp_id in range(len(self.curr_kp_ann)):
+                next_kp_ann[kp_id][1] = x
+                next_kp_ann[kp_id][2] = y
+            self.default_kp_ann = next_kp_ann
+
+        else:
+            # find the shift in center of the updated bbox
+            x_shift = int(rel_position.right() - rel_position.left() / 2) - x
+            y_shift = int(rel_position.top() - rel_position.bottom() / 2) - y
+            for kp_id in range(len(self.curr_kp_ann)):
+                next_kp_ann[kp_id][1] += x_shift
+                next_kp_ann[kp_id][2] += y_shift
 
       self.img_num += 1
 
@@ -1454,6 +1499,8 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         label_index = self.get_label_index_in_list()
         self.update_image_annotated_with_label(label_index)
 
+      self.curr_kp_ann = next_kp_ann
+      self.update_all_kp_poses()
 
 
     def backspaceKey(self, event):
@@ -1569,14 +1616,15 @@ class SampleApp(tk.Tk):  # inherit from Tk class
     def img_num_to_name(self, video_name, img_num):
         return video_name + "_{0:05d}.png".format(img_num)
 
+    # Updates the position of one Keypoint on Canvas
     def update_all_kp_poses(self):
         for kp_id in range(len(self.curr_kp_ann)):
             self.update_kp_pose(kp_id)
 
+    # Updates the position of all Keypoint on Canvas
     def update_kp_pose(self, kp_id):
         x, y = self.curr_kp_ann[kp_id][1:]
         # TODO: update Keypoint pose in GUI
-        self.latest_kp_ann[kp_id] = self.curr_kp_ann[kp_id]
 
 
 if __name__ == "__main__":
