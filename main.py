@@ -184,6 +184,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 
         # -------------------
         # Keypoints frame
+        #TODO: can we make labelFrames local var. not as class fields?
         self.keypoints = tk.LabelFrame(self.canvas, text="Keypoints", padx=5, pady=5)
         self.canvas.create_window(810, 300, anchor="nw", window=self.keypoints, width=240, height=40)
 
@@ -1198,31 +1199,48 @@ class SampleApp(tk.Tk):  # inherit from Tk class
           tkMessageBox.showinfo(title="Warning", message="0 Keypoint annotations!\nModel not saved!")
 
     def load(self):
-      # TODO: load keypoint annotaions from pickle file
-      #check if there is a model for the current video frames
-      model_annot_name = os.path.join(self.annotation_folder, self.video_name + ".model")
-      if not os.path.exists(model_annot_name):
-        tkMessageBox.showinfo(title = "Info", message = "No existing annotation model")
-        return
+        #check if there is a model for the current video frames
+        model_annot_name = os.path.join(self.annotation_folder, self.video_name + ".model")
+        if os.path.exists(model_annot_name):
+            # get the rectangle coordinates for each frame of the loaded model
+            previous_frames = self.load_annotations_from_file(model_annot_name)
 
-      # get the rectangle coordinates for each frame of the loaded model
-      previous_frames = self.load_annotations_from_file(model_annot_name)
+            self.rectangle_frame_pairs = [0] * len(previous_frames)
+            self.rectangle_frame_pairs[0:len(previous_frames)] = previous_frames
 
-      self.rectangle_frame_pairs = [0]*len(previous_frames)
-      self.rectangle_frame_pairs[0:len(previous_frames)] = previous_frames
+            w = 0
+            h = 0
+            # get number of annootated frames
+            number_of_annotaded_frames = sum([int(i != 0) for i in self.rectangle_frame_pairs])
 
-      w = 0
-      h = 0
-      # get number of annootated frames
-      number_of_annotaded_frames = sum([int(i !=0) for i in self.rectangle_frame_pairs])
+            # check if the current frame is an annotated one
+            if (self.rectangle_frame_pairs[self.img_num] is not 0):
+                label_index = self.get_label_index_in_list()
+                self.update_image_annotated_with_label(label_index)
 
-      # check if the current frame is an annotated one
-      if (self.rectangle_frame_pairs[self.img_num] is not 0):
-        label_index = self.get_label_index_in_list()
-        self.update_image_annotated_with_label(label_index)
+            self.frame_annot_label.winfo_children()[0].config(
+               text="Annotated frames: {0:0{width}}/{1}".format(number_of_annotaded_frames,
+                                                               len(self.rectangle_frame_pairs), width=3))
+            tkMessageBox.showinfo(title="Info", message="Annotation model loaded")
+        else:
+            tkMessageBox.showinfo(title = "Info", message = "No existing annotation model")
 
-      self.frame_annot_label.winfo_children()[0].config(text="Annotated frames: {0:0{width}}/{1}".format(number_of_annotaded_frames, len(self.rectangle_frame_pairs), width=3))
-      tkMessageBox.showinfo(title = "Info", message = "Annotation model loaded")
+        # check if there is a keypoint annotation model for the current video frames
+        kp_model_annot_name = os.path.join(self.annotation_folder, self.video_name + "_keypionts_annotation.model")
+        if os.path.exists(kp_model_annot_name):
+            with open(kp_model_annot_name, 'rb') as f:
+                self.kp_ann = cPickle.load(f)
+                tkMessageBox.showinfo(title="Info", message="Keypoint annotation model loaded")
+
+            # check if the current frame is an annotated one
+            self.curr_img_name = self.img_num_to_name(self.video_name, self.img_num)
+            if self.curr_img_name in self.kp_ann:
+                  self.curr_kp_ann = self.kp_ann[self.curr_img_name]
+                  self.update_all_kp_poses()
+        else:
+            tkMessageBox.showinfo(title="Info", message="No existing keypoint annotation model")
+
+
 
 
 
@@ -1548,6 +1566,18 @@ class SampleApp(tk.Tk):  # inherit from Tk class
                 os.mkdir(sb_bg_folder_path)
             self.use_augmented_bg, self.fg_masks = augment_bg(self.bg_aug.get(), self.fg_masks_mog2, self.bgcolor_rgb, self.sensitivity,
                                                self.frames_folder, sb_bg_folder_path, self.custom_bg.get(), self.custom_bg_img)
+    def img_num_to_name(self, video_name, img_num):
+        return video_name + "_{0:05d}.png".format(img_num)
+
+    def update_all_kp_poses(self):
+        for kp_id in range(len(self.curr_kp_ann)):
+            self.update_kp_pose(kp_id)
+
+    def update_kp_pose(self, kp_id):
+        x, y = self.curr_kp_ann[kp_id][1:]
+        # TODO: update Keypoint pose in GUI
+        self.latest_kp_ann[kp_id] = self.curr_kp_ann[kp_id]
+
 
 if __name__ == "__main__":
   parser = argparse.ArgumentParser(description = "Annotation Program")
