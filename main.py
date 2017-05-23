@@ -3,7 +3,7 @@ import tkFileDialog  # for browsing files
 import tkMessageBox # warning boxes
 import tkSimpleDialog # pop up window with entry
 import os              # system calls
-from PIL import ImageTk, Image # images in GUI and image processing
+from PIL import ImageTk, Image, ImageDraw # images in GUI and image processing
 import dlib              # correlational tracker
 import glob        # some linux command functions
 import numpy as np    # matlab python stuff
@@ -22,6 +22,7 @@ from export_data import export
 
 COLOR = False       # work with color images
 mimic_color = True; # mimic rgb export even though we have greyscale images to fit Caffe input shape
+debug = False;      # debug information
 
 class SampleApp(tk.Tk):  # inherit from Tk class
     '''Illustrate how to drag items on a Tkinter canvas'''
@@ -110,10 +111,12 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         #set rectangle as default choice
         self.shape.set(0)
         # Radio buttons for the rectangle and the circle
-        radio_rectangle = tk.Radiobutton(self.annotation_options_label,text ="rectangle",
+        self.radio_rectangle = tk.Radiobutton(self.annotation_options_label,text ="Bbox",
                          value=0, variable=self.shape, command=self.get_shape).pack(side="left", anchor="nw")
-        radio_circle = tk.Radiobutton(self.annotation_options_label,text ="circle",
-                         value=1, variable=self.shape, command=self.get_shape).pack(side="left", anchor="ne", padx=20)
+        self.radio_circle = tk.Radiobutton(self.annotation_options_label,text ="Keypoint",
+                         value=1, variable=self.shape, command=self.get_shape, state='disabled').pack(side="left", anchor="ne", padx=50)
+        #self.radio_circle.config(state='disable')
+
         #--------------------------
         # rectangle frame
         self.rectangle_frame = tk.LabelFrame(self.canvas, padx=5, pady=5)
@@ -146,13 +149,16 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         # circle frame
         self.circle_frame = tk.LabelFrame(self.canvas, padx=5, pady=5)
         self.canvas.create_window(920,55, anchor = "nw", window = self.circle_frame, width = 80, height = 80)
+        #self.circle_frame.config(state='disable')
+
 
         # circle radius button
-        circle_rad_btn = tk.Button(self.circle_frame, text = "radius", width=5)
+        circle_rad_btn = tk.Button(self.circle_frame, text = "STD", width=5, state='disable')
         circle_rad_btn.pack(side="top",anchor="nw")
+        
 
         # circle radius slider
-        self.slider_circle_r = tk.Scale(self.circle_frame, orient=tk.HORIZONTAL, length=70, sliderlength=10, from_=1, to=50)
+        self.slider_circle_r = tk.Scale(self.circle_frame, orient=tk.HORIZONTAL, length=70, sliderlength=10, from_=1, to=50, state='disable')
         self.slider_circle_r.pack(side= "bottom", anchor = "nw")
         #-------------------
         # labels frame
@@ -165,7 +171,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         self.label_colors = ['black','red','green','yellow','magenta','cyan']
         self.num_labels = 5
         label_0 = tk.Radiobutton(self.annotation_labels,text ="0",
-                         value = 0, variable=self.label,fg=self.label_colors[0], command=self.update_label).pack(side="left")
+                         value = 0, variable=self.label,fg=self.label_colors[0], command=self.update_label).pack(side="left")                         
         label_1 = tk.Radiobutton(self.annotation_labels,text ="1",
                          value = 1, variable=self.label, fg=self.label_colors[1], command=self.update_label).pack(side="left")
         label_2 = tk.Radiobutton(self.annotation_labels,text ="2",
@@ -181,6 +187,13 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         self.show_mask_flag = tk.IntVar()
         check_box_mask = tk.Checkbutton(self.annotation_options_label, text="Show labels only", variable=self.show_mask_flag, command=self.show_masks)
         check_box_mask.place(x=0, y=250)
+        
+        # check box for screen show 
+        self.output_screenshot = tk.IntVar()
+        self.check_box_screenshot = tk.Checkbutton(self.annotation_options_label, text="Screen Shots", variable=self.output_screenshot,state='disabled')
+        #self.check_box_screenshot.config(state='normal')
+        self.check_box_screenshot.place(x=130, y=250)
+
 
         #------------------------------------------------------------------------------------------------------------------------------------------#
         # Augmentation frame
@@ -614,6 +627,11 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         # get number of labels for this image
         size_labels = len(self.rectangle_frame_pairs[self.img_num])
         # go through the labels for this image and make annotations for all of them
+        if self.output_screenshot.get() == 1:
+           if debug: 
+            print "Screen Shot requested.."
+           image = Image.fromarray(self.curr_image_raw); # get current image 
+           draw = ImageDraw.Draw(image);
         for i in range(0, size_labels):
           label = self.rectangle_frame_pairs[self.img_num][i][-1]
           rec_width = self.rectangle_frame_pairs[self.img_num][i][2] - self.rectangle_frame_pairs[self.img_num][i][0]
@@ -621,14 +639,41 @@ class SampleApp(tk.Tk):  # inherit from Tk class
           rec_x_center = self.rectangle_frame_pairs[self.img_num][i][0] + rec_width/2 + self.img_start_x
           rec_y_center = self.rectangle_frame_pairs[self.img_num][i][1] + rec_height/2 + self.img_start_y
           self.create_rectangle((rec_x_center,rec_y_center),self.label_colors[label], [rec_width,rec_height] ,tags_flag=False, index = label-1)
+          # screen shot if requested 
+          if self.output_screenshot.get() == 1:
+           x_pos_ul = -self.img_start_x +rec_x_center-.5*rec_width;
+           x_pos_br = -self.img_start_x +rec_x_center+0.5*rec_width;
+           y_pos_ul = -self.img_start_y +rec_y_center-.5*rec_height;
+           y_pos_br = -self.img_start_y +rec_y_center+0.5*rec_height;
+           draw.rectangle((x_pos_ul,y_pos_ul,x_pos_br,y_pos_br),outline=self.label_colors[i+1]);
+           draw.rectangle((x_pos_ul+1,y_pos_ul+1,x_pos_br-1,y_pos_br-1),outline=self.label_colors[i+1]);
+           if debug: 
+             print rec_x_center,",",rec_y_center,",",rec_height,",",rec_width," Image Position: ",self.img_start_x,",",self.img_start_y
+        if self.output_screenshot.get() == 1:
+           image.thumbnail((320,240), Image.ANTIALIAS); # downsample  
+           # creating mask folders if they doesn't exist
+	   screenshot_folder = os.path.join(self.output_folder,"screenshot")
+	   if not os.path.exists(screenshot_folder):
+             os.makedirs(screenshot_folder)
+           ts =  screenshot_folder+"/"+ self.video_name + "_{0:05d}.png".format(self.img_num+1);
+           image.save(ts)
+           if debug:
+      	     fig = plt.figure()
+ 	     imgplot = plt.imshow(image)
+ 	     plt.show()
+             plt.pause(0)
+           
 
     def update_label(self):
       self.label_number = self.label.get()
 
       if self.label_number == 0:
         self.all_annotations_mode()
+        self.check_box_screenshot.config(state='normal')
 
       else:
+        self.check_box_screenshot.config(state='disable')
+
         # delete rectangle(s)
         for i in range(0, self.num_labels):
           self.canvas.delete(self.polygon_id[i])
@@ -897,15 +942,12 @@ class SampleApp(tk.Tk):  # inherit from Tk class
       return coords_relative
 
     def change_image(self):
-
       self.read_image_from_file()
       #TODO: put the bgaug func here and replace function calls to change displaed image with this method
       self.create_photo_from_raw()
       self.canvas.itemconfig(self.img_id, image = self.curr_photoimage)
       self.frame_info_label.winfo_children()[0].config(text = "Frame: {0:0{width}}/{1}".format(self.img_num+1, self.video_num_of_frames, width = 3))
       self.frame_info_label.winfo_children()[1].config(text="Frame: {0}".format(self.video_name + "_{0}.png".format(self.img_num+1)))
-
-
       if (self.rectangle_frame_pairs[self.img_num] == 0):
         self.canvas.itemconfig(self.polygon_id[0], outline = "blue")
       else:
@@ -914,10 +956,8 @@ class SampleApp(tk.Tk):  # inherit from Tk class
           self.canvas.itemconfig(self.polygon_id[0], outline = "blue")
         else:
           self.canvas.itemconfig(self.polygon_id[0], outline = self.label_colors[self.label_number])
-
       # get number of annootated frames
       number_of_annotaded_frames = sum([int(i !=0) for i in self.rectangle_frame_pairs])
-
       self.frame_annot_label.winfo_children()[0].config(text="Annotated frames: {0:0{width}}/{1}".format(number_of_annotaded_frames, len(self.rectangle_frame_pairs), width=3))
 
     def move_rectangle(self, label_index):

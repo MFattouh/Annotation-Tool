@@ -8,11 +8,15 @@ exclusively
  
 
 extensions:
-- export annotation window as seen in the tool (scrrenshots of annotation -> video presentation)
 - check that in augmentation.py the cast form u8int to float of frames does not interferre with data augmentation (not yet check -> see bugfix 2017-05-19)
 - add a flag to mimic rgb color in case of greyscale image  // (e.g. checkbox in case of greyscale image)
 - add a flag to switch on/off mean subtraction
+- add a flag to reset correlation tracker 
 - implementation of key-point option (whould be sufficent to take center of BBox as keypoint)
 - keep track wether augmentation was already pressed (to avoid doing the same work when pressing output) or values have been changed after augmentation has been pressed 
+
+
+DONE
+- export annotation window as seen in the tool (scrrenshots of annotation -> video presentation) <ah 23/05/17>
 
 
