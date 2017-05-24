@@ -106,88 +106,90 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 
         #------------------------------------------------------------------------------------------------------------------------------------------#
         # Annotation options window
-        self.annotation_options_label = tk.LabelFrame(self.canvas, text = "Annotation options", padx = 5, pady =5)
-        self.canvas.create_window(800, 10,anchor = "nw", window = self.annotation_options_label,width = 260,height = 345)
+        self.annotation_options_label = tk.LabelFrame(self.canvas, text="Annotation options", width=260,height=345, padx=5, pady=5)
+        self.annotation_options_label.place(x=800,y=10)
+        #self.canvas.create_window(800, 10,anchor = "nw", window = self.annotation_options_label,width = 260,height = 345)
 
         self.shape = tk.IntVar()
         #set rectangle as default choice
         self.shape.set(0)
         # Radio buttons for the rectangle and the circle
         self.radio_rectangle = tk.Radiobutton(self.annotation_options_label,text ="Bbox",
-                         value=0, variable=self.shape, command=self.get_shape).pack(side=tk.LEFT, anchor="nw")
-        # TODO: change position of the radio button
-        self.radio_circle = tk.Radiobutton(self.annotation_options_label,text ="Keypoint",
-                         value=1, variable=self.shape, command=self.get_shape).pack(side=tk.LEFT, anchor="nw")
-        #self.radio_circle.config(state='disable')
+                         value=0, variable=self.shape, command=self.get_shape).pack(anchor='w')
 
-        #--------------------------
-        # rectangle frame
-        self.rectangle_frame = tk.LabelFrame(self.canvas, padx=5, pady=5)
-        self.canvas.create_window(810, 105, anchor="nw", window=self.rectangle_frame, width=240, height=100)
-
-        # width frame
-        self.rec_width_frame = tk.LabelFrame(self.canvas, padx=5, pady=5)
-        self.canvas.create_window(820, 115, anchor="nw", window=self.rec_width_frame, width=80, height=80)
-
-        # rectangle width button
-        rec_width_btn = tk.Button(self.rec_width_frame, text="width",command=lambda: self.rectangle_change_size(w_flag=True, ask=True), width=5)
-        rec_width_btn.pack(side="top", anchor="nw")
-
-        # rectangle width slider
-        self.slider_rec_w = tk.Scale(self.rec_width_frame, orient=tk.HORIZONTAL, length=70, sliderlength=10, from_=1, to=640, command=lambda _:self.rectangle_change_size(w_flag=True))
-        self.slider_rec_w.pack(side="left", anchor="nw")
-
-        # rectangle height frame
-        self.rec_height_frame = tk.LabelFrame(self.canvas, padx=5, pady=5)
-        self.canvas.create_window(910, 115, anchor="nw", window=self.rec_height_frame, width=130, height=80)
-        # rectangle heigth button
-        rec_height_btn = tk.Button(self.rec_height_frame, text="height",command=lambda: self.rectangle_change_size(h_flag=True, ask=True), width=5)
-        rec_height_btn.pack(side=tk.LEFT, anchor=tk.CENTER)
-
-        # rectangle height slider
-        self.slider_rec_h = tk.Scale(self.rec_height_frame, orient=tk.VERTICAL, length=70, sliderlength=5, from_=1, to=480, command= lambda _:self.rectangle_change_size(h_flag = True))
-        self.slider_rec_h.pack(side=tk.LEFT, anchor="ne")
-
-        #-------------------
+        # -------------------
         # labels frame
-        self.annotation_labels = tk.LabelFrame(self.canvas, text="Labels", padx=5, pady=5)
-        self.canvas.create_window(810, 55, anchor="nw", window=self.annotation_labels, width=240, height=40)
+        self.annotation_labels = tk.LabelFrame(self.annotation_options_label, text="Labels", width=240, height=40, padx=5, pady=5)
+        self.annotation_labels.pack(fill=tk.X, expand=True)
 
         self.label = tk.IntVar()
         self.label.set(1)
         self.label_number = self.label.get()
-        self.label_colors = ['black','red','green','yellow','magenta','cyan']
+        self.label_colors = ['black', 'red', 'green', 'yellow', 'magenta', 'cyan']
         self.num_labels = 5
-        label_0 = tk.Radiobutton(self.annotation_labels,text ="0",
-                         value = 0, variable=self.label,fg=self.label_colors[0], command=self.update_label).pack(side="left")
-        label_1 = tk.Radiobutton(self.annotation_labels,text ="1",
-                         value = 1, variable=self.label, fg=self.label_colors[1], command=self.update_label).pack(side="left")
-        label_2 = tk.Radiobutton(self.annotation_labels,text ="2",
-                         value = 2, variable=self.label, fg=self.label_colors[2], command=self.update_label).pack(side="left")
-        label_3 = tk.Radiobutton(self.annotation_labels,text ="3",
-                         value = 3, variable=self.label, fg=self.label_colors[3], command=self.update_label).pack(side="left")
-        label_4 = tk.Radiobutton(self.annotation_labels,text ="4",
-                         value = 4, variable=self.label, fg=self.label_colors[4], command=self.update_label).pack(side="left")
-        label_5 = tk.Radiobutton(self.annotation_labels,text ="5",
-                         value = 5, variable=self.label, fg=self.label_colors[5], command=self.update_label).pack(side="left")
+        label_0 = tk.Radiobutton(self.annotation_labels, text="0",
+                                 value=0, variable=self.label, fg=self.label_colors[0], command=self.update_label)
+        label_0.pack(side=tk.LEFT)
 
-        # check box
-        self.show_mask_flag = tk.IntVar()
-        check_box_mask = tk.Checkbutton(self.annotation_options_label, text="Show labels only", variable=self.show_mask_flag, command=self.show_masks)
-        check_box_mask.place(x=0, y=185)
+        label_1 = tk.Radiobutton(self.annotation_labels, text="1",
+                                 value=1, variable=self.label, fg=self.label_colors[1], command=self.update_label)
+        label_1.pack(side=tk.LEFT)
 
-        # check box for screen show 
-        self.output_screenshot = tk.IntVar()
-        self.check_box_screenshot = tk.Checkbutton(self.annotation_options_label, text="Screen Shots", variable=self.output_screenshot,state='disabled')
-        #self.check_box_screenshot.config(state='normal')
-        self.check_box_screenshot.place(x=130, y=185)
+        label_2 = tk.Radiobutton(self.annotation_labels, text="2",
+                                 value=2, variable=self.label, fg=self.label_colors[2], command=self.update_label)
+        label_2.pack(side=tk.LEFT)
+        label_3 = tk.Radiobutton(self.annotation_labels, text="3",
+                                 value=3, variable=self.label, fg=self.label_colors[3], command=self.update_label)
+        label_3.pack(side=tk.LEFT)
+        label_4 = tk.Radiobutton(self.annotation_labels, text="4",
+                                 value=4, variable=self.label, fg=self.label_colors[4], command=self.update_label)
+        label_4.pack(side=tk.LEFT)
+        label_5 = tk.Radiobutton(self.annotation_labels, text="5",
+                                 value=5, variable=self.label, fg=self.label_colors[5], command=self.update_label)
+        label_5.pack(side=tk.LEFT)
 
+        #--------------------------
+        # rectangle frame
+        self.rectangle_frame = tk.LabelFrame(self.annotation_options_label, padx=5, pady=5, width=240, height=100)
+        self.rectangle_frame.pack(fill=tk.X, expand=1, pady=5)
+
+        # width frame
+        self.rec_width_frame = tk.LabelFrame(self.rectangle_frame, width=80, height=80)
+        self.rec_width_frame.pack(side=tk.LEFT, expand=True, fill=tk.BOTH)
+
+        # rectangle width button
+        rec_width_btn = tk.Button(self.rec_width_frame, text="width", command=lambda: self.rectangle_change_size(w_flag=True, ask=True), width=5)
+        rec_width_btn.pack(side=tk.TOP, padx=5, pady=5)
+
+        # rectangle width slider
+        self.slider_rec_w = tk.Scale(self.rec_width_frame, orient=tk.HORIZONTAL, length=70, sliderlength=10, from_=1, to=640, command=lambda _:self.rectangle_change_size(w_flag=True))
+        self.slider_rec_w.pack(side=tk.TOP, padx=5, pady=5)
+
+        # rectangle height
+        self.rec_height_frame = tk.LabelFrame(self.rectangle_frame, width=130, height=80)
+        self.rec_height_frame.pack(side=tk.LEFT, expand=True, fill=tk.BOTH)
+
+        # rectangle heigth button
+        rec_height_btn = tk.Button(self.rec_height_frame, text="height",
+                                   command=lambda: self.rectangle_change_size(h_flag=True, ask=True), width=5)
+        rec_height_btn.pack(side=tk.LEFT, anchor=tk.CENTER, padx=5, pady=5)
+
+        # rectangle height slider
+        self.slider_rec_h = tk.Scale(self.rec_height_frame, orient=tk.VERTICAL, length=70, sliderlength=5, from_=1,
+                                     to=480, command=lambda _: self.rectangle_change_size(h_flag = True))
+        self.slider_rec_h.pack(side=tk.LEFT, anchor="ne", padx=5, pady=5)
+
+        # Keypoint Radio button
+        # TODO: change position of the radio button
+        self.radio_circle = tk.Radiobutton(self.annotation_options_label, text="Keypoint",
+                                           value=1, variable=self.shape, command=self.get_shape)
+        self.radio_circle.pack(anchor='w', pady=5)
 
         # -------------------
         # Keypoints frame
         #TODO: can we make labelFrames local var. not as class fields?
-        self.keypoints = tk.LabelFrame(self.canvas, text="Keypoints", padx=5, pady=5)
-        self.canvas.create_window(810, 265, anchor="nw", window=self.keypoints, width=240, height=40)
+        self.keypoints = tk.LabelFrame(self.annotation_options_label, text="Keypoints", padx=5, pady=5, width=240, height=40)
+        self.keypoints.pack(expand=True, fill=tk.X)
 
         self.kp1 = tk.IntVar()
         kp1_check_box = tk.Checkbutton(self.keypoints, text="kp1", variable=self.kp1).pack(side="left")
@@ -210,6 +212,22 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         self.curr_kp_ann = [[False, 0, 0], [False, 0, 0], [False, 0, 0], [False, 0, 0], [False, 0, 0]]
         # Constant holds the defalut keypoint annotation values
         self.default_kp_ann = [[False, 0, 0], [False, 0, 0], [False, 0, 0], [False, 0, 0], [False, 0, 0]]
+
+
+        # check box
+        self.show_mask_flag = tk.IntVar()
+        self.check_box_mask = tk.Checkbutton(self.annotation_options_label, text="Show labels only",
+                                             variable=self.show_mask_flag, command=self.show_masks)
+        self.check_box_mask.pack(anchor='nw')
+
+        #check box for screen show
+        self.output_screenshot = tk.IntVar()
+        self.check_box_screenshot = tk.Checkbutton(self.annotation_options_label, text="Screen Shots",
+                                                   variable=self.output_screenshot, state='disabled')
+        self.check_box_screenshot.pack(anchor='ne')
+        self.check_box_screenshot.config(state='normal')
+        # Make sure only Bbox annotation is enabled at startup
+        self.get_shape()
         #------------------------------------------------------------------------------------------------------------------------------------------#
         # Augmentation frame
         self.augmentation_frame = tk.LabelFrame(self.canvas, text="Augmentation")
@@ -712,16 +730,29 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 
     def get_shape(self):
       shape = self.shape.get()
-      img_width = self.curr_photoimage.width()
-      img_height = self.curr_photoimage.height()
+      #img_width = self.curr_photoimage.width()
+      #img_height = self.curr_photoimage.height()
 
       if shape == 0:
         print "Rectangle"
+        # Disable Keypoint annotations
+        for child in self.keypoints.winfo_children():
+            child.configure(state='disable')
+        # Enable Bbox annotations
+        for child in self.annotation_labels.winfo_children():
+            child.configure(state='normal')
         #self.canvas.delete(self.polygon_id)
         #self.create_rectangle((img_width/2 + self.img_start_x, img_height/2 + self.img_start_y), "blue", self.rectangle_size)
 
       elif shape == 1:
         print "Circle"
+        # Enable Keypoint annotations
+        for child in self.keypoints.winfo_children():
+            child.configure(state='normal')
+        # Disable Bbox annotations
+        for child in self.annotation_labels.winfo_children():
+            child.configure(state='disable')
+
         #self.canvas.delete(self.polygon_id)
         #self.create_circle(300,200,40)
 
