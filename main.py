@@ -114,19 +114,20 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         self.shape.set(0)
         # Radio buttons for the rectangle and the circle
         self.radio_rectangle = tk.Radiobutton(self.annotation_options_label,text ="Bbox",
-                         value=0, variable=self.shape, command=self.get_shape).pack(side="left", anchor="nw")
+                         value=0, variable=self.shape, command=self.get_shape).pack(side=tk.LEFT, anchor="nw")
+        # TODO: change position of the radio button
         self.radio_circle = tk.Radiobutton(self.annotation_options_label,text ="Keypoint",
-                         value=1, variable=self.shape, command=self.get_shape, state='disabled').pack(side="left", anchor="ne", padx=50)
+                         value=1, variable=self.shape, command=self.get_shape).pack(side=tk.LEFT, anchor="nw")
         #self.radio_circle.config(state='disable')
 
         #--------------------------
         # rectangle frame
         self.rectangle_frame = tk.LabelFrame(self.canvas, padx=5, pady=5)
-        self.canvas.create_window(810,55, anchor="nw", window=self.rectangle_frame, width=100, height=180)
+        self.canvas.create_window(810, 105, anchor="nw", window=self.rectangle_frame, width=240, height=100)
 
         # width frame
         self.rec_width_frame = tk.LabelFrame(self.canvas, padx=5, pady=5)
-        self.canvas.create_window(820,60, anchor="nw", window=self.rec_width_frame, width=80, height=80)
+        self.canvas.create_window(820, 115, anchor="nw", window=self.rec_width_frame, width=80, height=80)
 
         # rectangle width button
         rec_width_btn = tk.Button(self.rec_width_frame, text="width",command=lambda: self.rectangle_change_size(w_flag=True, ask=True), width=5)
@@ -138,34 +139,19 @@ class SampleApp(tk.Tk):  # inherit from Tk class
 
         # rectangle height frame
         self.rec_height_frame = tk.LabelFrame(self.canvas, padx=5, pady=5)
-        self.canvas.create_window(820,145, anchor="nw", window=self.rec_height_frame, width=80, height=80)
-
+        self.canvas.create_window(910, 115, anchor="nw", window=self.rec_height_frame, width=130, height=80)
         # rectangle heigth button
         rec_height_btn = tk.Button(self.rec_height_frame, text="height",command=lambda: self.rectangle_change_size(h_flag=True, ask=True), width=5)
-        rec_height_btn.pack(side="top", anchor="n")
+        rec_height_btn.pack(side=tk.LEFT, anchor=tk.CENTER)
 
         # rectangle height slider
         self.slider_rec_h = tk.Scale(self.rec_height_frame, orient=tk.VERTICAL, length=70, sliderlength=5, from_=1, to=480, command= lambda _:self.rectangle_change_size(h_flag = True))
-        self.slider_rec_h.pack(side="bottom", anchor="nw")
-        #----------------
-        # circle frame
-        self.circle_frame = tk.LabelFrame(self.canvas, padx=5, pady=5)
-        self.canvas.create_window(920,55, anchor = "nw", window = self.circle_frame, width = 80, height = 80)
-        #self.circle_frame.config(state='disable')
+        self.slider_rec_h.pack(side=tk.LEFT, anchor="ne")
 
-
-        # circle radius button
-        circle_rad_btn = tk.Button(self.circle_frame, text = "STD", width=5, state='disable')
-        circle_rad_btn.pack(side="top",anchor="nw")
-        
-
-        # circle radius slider
-        self.slider_circle_r = tk.Scale(self.circle_frame, orient=tk.HORIZONTAL, length=70, sliderlength=10, from_=1, to=50, state='disable')
-        self.slider_circle_r.pack(side= "bottom", anchor = "nw")
         #-------------------
         # labels frame
         self.annotation_labels = tk.LabelFrame(self.canvas, text="Labels", padx=5, pady=5)
-        self.canvas.create_window(810,240, anchor="nw", window=self.annotation_labels, width=240, height=40)
+        self.canvas.create_window(810, 55, anchor="nw", window=self.annotation_labels, width=240, height=40)
 
         self.label = tk.IntVar()
         self.label.set(1)
@@ -173,7 +159,7 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         self.label_colors = ['black','red','green','yellow','magenta','cyan']
         self.num_labels = 5
         label_0 = tk.Radiobutton(self.annotation_labels,text ="0",
-                         value = 0, variable=self.label,fg=self.label_colors[0], command=self.update_label).pack(side="left")                         
+                         value = 0, variable=self.label,fg=self.label_colors[0], command=self.update_label).pack(side="left")
         label_1 = tk.Radiobutton(self.annotation_labels,text ="1",
                          value = 1, variable=self.label, fg=self.label_colors[1], command=self.update_label).pack(side="left")
         label_2 = tk.Radiobutton(self.annotation_labels,text ="2",
@@ -188,20 +174,20 @@ class SampleApp(tk.Tk):  # inherit from Tk class
         # check box
         self.show_mask_flag = tk.IntVar()
         check_box_mask = tk.Checkbutton(self.annotation_options_label, text="Show labels only", variable=self.show_mask_flag, command=self.show_masks)
-        check_box_mask.place(x=0, y=250)
-        
+        check_box_mask.place(x=0, y=185)
+
         # check box for screen show 
         self.output_screenshot = tk.IntVar()
         self.check_box_screenshot = tk.Checkbutton(self.annotation_options_label, text="Screen Shots", variable=self.output_screenshot,state='disabled')
         #self.check_box_screenshot.config(state='normal')
-        self.check_box_screenshot.place(x=130, y=250)
+        self.check_box_screenshot.place(x=130, y=185)
 
 
         # -------------------
         # Keypoints frame
         #TODO: can we make labelFrames local var. not as class fields?
         self.keypoints = tk.LabelFrame(self.canvas, text="Keypoints", padx=5, pady=5)
-        self.canvas.create_window(810, 300, anchor="nw", window=self.keypoints, width=240, height=40)
+        self.canvas.create_window(810, 265, anchor="nw", window=self.keypoints, width=240, height=40)
 
         self.kp1 = tk.IntVar()
         kp1_check_box = tk.Checkbutton(self.keypoints, text="kp1", variable=self.kp1).pack(side="left")
